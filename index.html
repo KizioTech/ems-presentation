@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>MODEL EMS — Multi-Incident Response Simulator</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+    <link rel="stylesheet" href="css/main.css" />
+  </head>
+  <body>
+    <!-- ══════════════════════════════════════════════════════
+     FULLSCREEN MODAL (edge click / node click)
+══════════════════════════════════════════════════════ -->
+    <div
+      id="modal-overlay"
+      class="modal-overlay"
+      onclick="Modal.closeOnOverlay(event)"
+    >
+      <div id="modal-box" class="modal-box">
+        <button class="modal-close-btn" onclick="Modal.close()">✕ CLOSE</button>
+        <div id="modal-content"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════ -->
+    <header id="app-header">
+      <div class="header-left">
+        <div class="logo">EMS<span class="logo-accent">OPS</span></div>
+        <div class="header-meta">
+          <div class="header-title">
+            MODEL MULTI-INCIDENT RESPONSE SIMULATOR
+          </div>
+          <div class="header-sub">
+            // G(V=40,E=200) · MULTI-OBJECTIVE ROUTING · PARETO-OPTIMAL DISPATCH
+          </div>
+        </div>
+        <div class="live-badge"><span class="live-dot"></span>LIVE SIM</div>
+      </div>
+
+      <div class="header-stats">
+        <div class="hstat">
+          <span class="hstat-val" id="hs-nodes">40</span
+          ><span class="hstat-key">Nodes</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-val" id="hs-edges">200</span
+          ><span class="hstat-key">Edges</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-val text-red" id="hs-inc">15</span
+          ><span class="hstat-key">Incidents</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-val text-amber" id="hs-queued">0</span
+          ><span class="hstat-key">Queued</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-val text-green" id="hs-dispatched">0</span
+          ><span class="hstat-key">Dispatched</span>
+        </div>
+        <div class="hstat-sep"></div>
+        <div class="hstat">
+          <span class="hstat-val text-cyan" id="hs-avgtime">—</span
+          ><span class="hstat-key">Avg Route</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <!-- Policy selector (dropdown) -->
+        <div class="policy-block">
+          <div class="policy-label">ROUTING POLICY</div>
+          <select
+            id="policy-select"
+            class="policy-select"
+            onchange="State.setPolicy(this.value)"
+          >
+            <option value="time" selected>⏱ Time</option>
+            <option value="cost">💰 Cost</option>
+            <option value="reliability">⚡ Reliability</option>
+            <option value="pareto">⬡ Pareto</option>
+          </select>
+        </div>
+
+        <!-- Tool buttons -->
+        <button
+          id="resilience-toggle"
+          class="hdr-tool-btn"
+          onclick="Resilience.toggle()"
+        >
+          ⬡ Resilience
+        </button>
+        <button
+          id="highlighter-toggle"
+          class="hdr-tool-btn"
+          onclick="Highlighter.toggle()"
+        >
+          ◎ Highlight
+        </button>
+      </div>
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════
+     TIME BAR
+══════════════════════════════════════════════════════ -->
+    <div class="time-bar" id="time-bar">
+      <div class="time-display">
+        <span class="time-val" id="time-display">00:00</span>
+        <span class="time-period" id="period-label">NIGHT</span>
+      </div>
+      <div class="slider-wrap">
+        <input
+          type="range"
+          id="time-slider"
+          min="0"
+          max="1440"
+          step="10"
+          value="0"
+        />
+        <div class="slider-zones" id="slider-zones"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+     BODY
+══════════════════════════════════════════════════════ -->
+    <div class="app-body" id="app-body">
+      <!-- ── LEFT: Incident queue + dispatch ──────────────── -->
+      <aside class="side-panel" id="left-panel">
+        <div class="panel-header">
+          <strong>Incidents</strong>
+          <span class="badge-count" id="inc-count-badge">15</span>
+          <button
+            class="panel-toggle-btn"
+            id="left-toggle"
+            onclick="togglePanel('left')"
+            title="Collapse panel"
+          >
+            «
+          </button>
+        </div>
+
+        <!-- Severity filter (dropdown) -->
+        <div class="filter-bar">
+          <label class="filter-label">SEVERITY</label>
+          <select
+            id="sev-filter-select"
+            class="sev-filter-select"
+            onchange="UI.applyFilter(this.value)"
+          >
+            <option value="all" selected>All Severities</option>
+            <option value="critical">🔴 Critical</option>
+            <option value="urgent">🟠 Urgent</option>
+            <option value="moderate">🟡 Moderate</option>
+            <option value="minor">🟢 Minor</option>
+          </select>
+        </div>
+
+        <!-- Incident cards -->
+        <div class="inc-list" id="inc-list"></div>
+
+        <!-- Dispatch queue footer -->
+        <div class="dispatch-footer" id="dispatch-footer">
+          <div class="dq-info">
+            <span class="dq-count-label">Queued:</span>
+            <span class="dq-count" id="dq-count">0</span>
+            incidents
+          </div>
+          <div class="dq-actions">
+            <button class="dq-clear-btn" onclick="Routing.clearAll()">
+              ✕ Clear
+            </button>
+            <button
+              class="dq-dispatch-btn"
+              id="dq-dispatch-btn"
+              onclick="Routing.dispatchQueue()"
+              disabled
+            >
+              ▶ DISPATCH ALL
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── CENTER: Graph ─────────────────────────────────── -->
+      <main class="graph-area" id="graph-area">
+        <div id="cy"></div>
+
+        <!-- Corner brackets -->
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <!-- Congestion scale -->
+        <div class="cong-scale">
+          <div class="cs-label">CONGESTION</div>
+          <div class="cs-gradient"></div>
+          <div class="cs-ticks">
+            <span>×1.0</span><span>×1.5</span><span>×2.0</span><span>×2.5</span>
+          </div>
+        </div>
+
+        <!-- Route legend (appears when routes are drawn) -->
+        <div id="route-legend" class="route-legend" style="display: none">
+          <div class="rl-head">ACTIVE ROUTES</div>
+          <div id="route-legend-items"></div>
+        </div>
+
+        <!-- Resilience panel -->
+        <div id="resilience-panel" class="tool-panel resilience-panel">
+          <div class="tool-panel-header amber">
+            <span class="tp-title"><span>⬡</span> RESILIENCE ANALYSIS</span>
+            <button class="tp-close-btn" onclick="Resilience.toggle()">
+              EXIT
+            </button>
+          </div>
+          <div class="res-threshold-section">
+            <div class="res-thresh-row">
+              <div class="res-thresh-label-group">
+                <span class="res-mode-indicator" id="res-mode-label"
+                  >ρ CRITICALITY</span
+                >
+                <span class="res-thresh-hint">threshold</span>
+              </div>
+              <div class="res-input-group">
+                <button class="res-nudge-btn" onclick="Resilience.nudge(-0.05)">
+                  −
+                </button>
+                <input
+                  type="number"
+                  id="threshold-input"
+                  class="threshold-input"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value="0.30"
+                />
+                <button class="res-nudge-btn" onclick="Resilience.nudge(+0.05)">
+                  +
+                </button>
+              </div>
+            </div>
+            <input
+              type="range"
+              class="res-slider"
+              id="rho-slider"
+              min="0"
+              max="1"
+              step="0.01"
+              value="0.30"
+            />
+            <div class="res-slider-labels">
+              <span>0</span><span>0.25</span><span>0.50</span><span>0.75</span
+              ><span>1.0</span>
+            </div>
+            <div class="res-status-bar">
+              <span
+                ><span id="rho-candidate-count" class="amber-val">0</span> edges
+                match</span
+              >
+              <span id="res-removed-inline" class="red-val">0 removed</span>
+            </div>
+          </div>
+          <div class="res-mode-row">
+            <span class="row-label">FILTER BY</span>
+            <div class="seg-control">
+              <button
+                class="seg-btn active"
+                id="mode-rho"
+                onclick="Resilience.setMode('rho')"
+              >
+                ρ Criticality
+              </button>
+              <button
+                class="seg-btn"
+                id="mode-gamma"
+                onclick="Resilience.setMode('gamma')"
+              >
+                γ Reliability
+              </button>
+            </div>
+          </div>
+          <div class="res-action-hint">
+            Click any <span class="amber-val">highlighted edge</span> to remove
+            it
+          </div>
+          <div class="res-removed-header">
+            <span
+              >REMOVED <span id="removed-count" class="badge-red">0</span></span
+            >
+            <button class="link-btn" onclick="Resilience.restoreAll()">
+              ↩ Restore All
+            </button>
+          </div>
+          <div id="removed-list" class="removed-list">
+            <div class="list-empty">No edges removed yet</div>
+          </div>
+        </div>
+
+        <!-- Highlighter panel -->
+        <div id="highlighter-panel" class="tool-panel highlighter-panel">
+          <div class="tool-panel-header cyan">
+            <span class="tp-title"><span>◎</span> NODE HIGHLIGHTER</span>
+            <button class="tp-close-btn" onclick="Highlighter.toggle()">
+              EXIT
+            </button>
+          </div>
+          <div class="hl-section">
+            <div class="hl-section-head">NODE TYPE</div>
+            <div class="hl-type-grid">
+              <button
+                class="hl-type-btn"
+                data-type="hospital"
+                onclick="Highlighter.toggleType('hospital', this)"
+              >
+                <div class="hl-swatch hosp"></div>
+                <div class="hl-btn-label">Dispatch Centres</div>
+                <div class="hl-btn-count" id="hl-count-hospital">3</div>
+              </button>
+              <button
+                class="hl-type-btn"
+                data-type="market"
+                onclick="Highlighter.toggleType('market', this)"
+              >
+                <div class="hl-swatch mkt"></div>
+                <div class="hl-btn-label">Markets</div>
+                <div class="hl-btn-count" id="hl-count-market">4</div>
+              </button>
+              <button
+                class="hl-type-btn"
+                data-type="intersection"
+                onclick="Highlighter.toggleType('intersection', this)"
+              >
+                <div class="hl-swatch node"></div>
+                <div class="hl-btn-label">Intersections</div>
+                <div class="hl-btn-count" id="hl-count-intersection">33</div>
+              </button>
+              <button
+                class="hl-type-btn"
+                data-type="incident"
+                onclick="Highlighter.toggleType('incident', this)"
+              >
+                <div class="hl-swatch inc"></div>
+                <div class="hl-btn-label">Incidents</div>
+                <div class="hl-btn-count" id="hl-count-incident">10</div>
+              </button>
+            </div>
+          </div>
+          <div class="hl-section">
+            <div class="hl-section-head">ZONE</div>
+            <div class="hl-zone-row">
+              <button
+                class="hl-zone-btn"
+                data-zone="CBD"
+                onclick="Highlighter.toggleZone('CBD', this)"
+              >
+                CBD
+              </button>
+              <button
+                class="hl-zone-btn"
+                data-zone="residential"
+                onclick="Highlighter.toggleZone('residential', this)"
+              >
+                Residential
+              </button>
+              <button
+                class="hl-zone-btn"
+                data-zone="peri-urban"
+                onclick="Highlighter.toggleZone('peri-urban', this)"
+              >
+                Peri-Urban
+              </button>
+            </div>
+          </div>
+          <div class="hl-section">
+            <div class="hl-section-head">STYLE</div>
+            <div class="hl-style-row">
+              <button
+                class="hl-style-btn active"
+                data-style="glow"
+                onclick="Highlighter.setStyle('glow', this)"
+              >
+                ◉ Glow
+              </button>
+              <button
+                class="hl-style-btn"
+                data-style="pulse"
+                onclick="Highlighter.setStyle('pulse', this)"
+              >
+                ◎ Pulse
+              </button>
+              <button
+                class="hl-style-btn"
+                data-style="both"
+                onclick="Highlighter.setStyle('both', this)"
+              >
+                ⬤ Both
+              </button>
+            </div>
+          </div>
+          <div class="hl-footer">
+            <span id="hl-status" class="hl-status-text"
+              >No nodes highlighted</span
+            >
+            <button class="link-btn" onclick="Highlighter.clearAll()">
+              ✕ Clear
+            </button>
+          </div>
+        </div>
+
+        <!-- Node detail panel (non-incident nodes) -->
+        <div id="node-panel" class="node-panel">
+          <button class="np-close" onclick="UI.closeNodePanel()">✕</button>
+          <div id="node-panel-content"></div>
+        </div>
+      </main>
+
+      <!-- ── RIGHT: Legend + Assignments ──────────────────── -->
+      <aside class="side-panel right" id="right-panel">
+        <div class="panel-header">
+          <strong>Network</strong>
+          <button
+            class="panel-toggle-btn"
+            id="right-toggle"
+            onclick="togglePanel('right')"
+            title="Collapse panel"
+          >
+            »
+          </button>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-head">Node Types</div>
+          <div class="leg-item">
+            <div class="l-node hosp"></div>
+            Dispatch Centre
+          </div>
+          <div class="leg-item">
+            <div class="l-node market"></div>
+            Facility (Market)
+          </div>
+          <div class="leg-item">
+            <div class="l-node cbd"></div>
+            Junction (CBD)
+          </div>
+          <div class="leg-item">
+            <div class="l-node peri"></div>
+            Junction (other)
+          </div>
+          <div class="leg-item">
+            <div class="l-node incident"></div>
+            Active Incident
+          </div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-head">Road Class</div>
+          <div class="leg-item">
+            <div class="l-line trunk"></div>
+            Trunk 4-lane
+          </div>
+          <div class="leg-item">
+            <div class="l-line primary"></div>
+            Primary 2-lane
+          </div>
+          <div class="leg-item">
+            <div class="l-line residential"></div>
+            Residential
+          </div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-head">Edge Width = ρ Criticality</div>
+          <div class="leg-item">
+            <div class="l-line thin"></div>
+            ρ ≈ 0
+          </div>
+          <div class="leg-item">
+            <div class="l-line medium-w"></div>
+            ρ ≈ 0.5
+          </div>
+          <div class="leg-item">
+            <div class="l-line thick"></div>
+            ρ = 1.0
+          </div>
+        </div>
+
+        <!-- Live stats -->
+        <div class="rp-section">
+          <div class="rp-head">Live Stats</div>
+          <div class="stat-row">
+            <span>Period</span
+            ><span id="ls-period" class="mono text-cyan">NIGHT</span>
+          </div>
+          <div class="stat-row">
+            <span>Normal ×</span><span id="ls-normal" class="mono">1.0</span>
+          </div>
+          <div class="stat-row">
+            <span>Market ×</span><span id="ls-market" class="mono">1.0</span>
+          </div>
+          <div class="stat-row">
+            <span>Congested</span
+            ><span id="ls-cong" class="mono text-amber">0</span>
+          </div>
+          <div class="stat-row">
+            <span>Policy</span
+            ><span id="ls-policy" class="mono text-cyan">TIME</span>
+          </div>
+        </div>
+
+        <!-- Dispatch log -->
+        <div class="panel-header" style="border-top: 1px solid var(--border)">
+          <strong>Dispatch Log</strong>
+          <button
+            class="link-btn"
+            onclick="Routing.clearAll()"
+            style="font-size: 0.65rem"
+          >
+            ✕ Clear
+          </button>
+        </div>
+        <div id="dispatch-log" class="dispatch-log">
+          <div class="list-empty">No active dispatches</div>
+        </div>
+
+        <!-- Vehicles -->
+        <div
+          class="panel-header"
+          style="border-top: 1px solid var(--border); margin-top: auto"
+        >
+          <strong>Vehicles</strong>
+        </div>
+        <div id="veh-list"></div>
+      </aside>
+    </div>
+
+    <!-- Edge tooltip -->
+    <div id="edge-tooltip" class="edge-tooltip">
+      <div class="et-head" id="et-head"></div>
+      <div class="et-body">
+        <div class="et-row">
+          <span>Road</span><span id="et-road" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>Length</span><span id="et-len" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>Base time</span><span id="et-btime" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>Current time</span><span id="et-ctime" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>Multiplier</span><span id="et-mult" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>Cost (MWK)</span><span id="et-cost" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>γ Reliability</span><span id="et-rel" class="mono"></span>
+        </div>
+        <div class="et-row">
+          <span>ρ Criticality</span><span id="et-crit" class="mono"></span>
+        </div>
+      </div>
+      <div class="et-crit-bar-wrap">
+        <div class="et-crit-bar" id="et-crit-bar"></div>
+      </div>
+      <div class="et-crit-label">CRITICALITY</div>
+    </div>
+
+    <!-- Script load order: data → graph → state → routing → modal → ui → resilience → highlighter → controls -->
+    <script src="js/data.js"></script>
+    <script src="js/graph.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/routing.js"></script>
+    <script src="js/modal.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/resilience.js"></script>
+    <script src="js/highlighter.js"></script>
+    <script src="js/controls.js"></script>
+  </body>
+</html>
