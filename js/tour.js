@@ -21,6 +21,24 @@ window.Tour = (() => {
           }
         },
         {
+          element: '#graph-area',
+          popover: {
+            title: 'Interactive City Map',
+            description: 'This is your operational theater. Use your mouse to <b>pan</b> and <b>scroll to zoom</b>. The graph represents the city network: dots are locations (Nodes) and lines are roads (Edges).',
+            side: 'left',
+            align: 'start'
+          }
+        },
+        {
+          element: '#graph-area',
+          popover: {
+            title: 'Edge & Node Analysis',
+            description: '<b>Click any node or road</b> to open high-fidelity analytics. You can see real-time performance metrics, travel times, and criticality scores for every element in the network.',
+            side: 'left',
+            align: 'start'
+          }
+        },
+        {
           element: '#left-panel',
           popover: {
             title: 'Incident Queue',
@@ -35,6 +53,15 @@ window.Tour = (() => {
             title: 'Routing Policy',
             description: 'Select how dispatch routes should be optimized: by Time, Cost, Reliability, or a Pareto trade-off combination.',
             side: 'bottom',
+            align: 'start'
+          }
+        },
+        {
+          element: '#route-legend',
+          popover: {
+            title: 'Optimal Route Visualization',
+            description: 'When dispatches are active, the optimal paths are drawn on the map. This legend shows active missions and their performance scores across different objectives.',
+            side: 'left',
             align: 'start'
           }
         },
