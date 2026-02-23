@@ -11,6 +11,10 @@
     <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
     <link rel="stylesheet" href="css/main.css" />
     <link rel="stylesheet" href="css/mobile.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
+    />
   </head>
   <body>
     <!-- ══════════════════════════════════════════════════════
@@ -28,11 +32,13 @@
     </div>
 
     <!-- Orientation Prompt Modal -->
-    <div id="orientation-prompt" class="mobile-prompt" style="display: none;">
+    <div id="orientation-prompt" class="mobile-prompt" style="display: none">
       <div class="prompt-content">
         <div class="prompt-icon">📱 ⤾</div>
         <div class="prompt-title">Please Rotate Device</div>
-        <div class="prompt-text">For the best experience, please rotate your device to landscape mode.</div>
+        <div class="prompt-text">
+          For the best experience, please rotate your device to landscape mode.
+        </div>
         <button class="prompt-btn" onclick="UI.dismissPrompt()">Done</button>
       </div>
     </div>
@@ -65,7 +71,9 @@
         <div class="mobile-menu-content">
           <div class="mobile-menu-header">
             <span>MENU</span>
-            <button class="mobile-menu-close" onclick="UI.closeMobileMenu()">✕</button>
+            <button class="mobile-menu-close" onclick="UI.closeMobileMenu()">
+              ✕
+            </button>
           </div>
           <div class="header-stats">
             <div class="hstat">
@@ -106,7 +114,10 @@
               <select
                 id="policy-select"
                 class="policy-select"
-                onchange="State.setPolicy(this.value); UI.closeMobileMenu && UI.closeMobileMenu()"
+                onchange="
+                  State.setPolicy(this.value);
+                  UI.closeMobileMenu && UI.closeMobileMenu();
+                "
               >
                 <option value="time" selected>⏱ Time</option>
                 <option value="cost">💰 Cost</option>
@@ -117,16 +128,32 @@
 
             <!-- Tool buttons -->
             <button
+              id="tour-btn"
+              class="hdr-tool-btn"
+              onclick="
+                Tour.start();
+                UI.closeMobileMenu && UI.closeMobileMenu();
+              "
+            >
+              ℹ Tour
+            </button>
+            <button
               id="resilience-toggle"
               class="hdr-tool-btn"
-              onclick="Resilience.toggle(); UI.closeMobileMenu && UI.closeMobileMenu()"
+              onclick="
+                Resilience.toggle();
+                UI.closeMobileMenu && UI.closeMobileMenu();
+              "
             >
               ⬡ Resilience
             </button>
             <button
               id="highlighter-toggle"
               class="hdr-tool-btn"
-              onclick="Highlighter.toggle(); UI.closeMobileMenu && UI.closeMobileMenu()"
+              onclick="
+                Highlighter.toggle();
+                UI.closeMobileMenu && UI.closeMobileMenu();
+              "
             >
               ◎ Highlight
             </button>
@@ -161,7 +188,15 @@
     <!-- ══════════════════════════════════════════════════════
          MAIN APP BODY
     ══════════════════════════════════════════════════════ -->
-    <main id="app-body" class="app-body" onclick="!event.target.closest('#app-header') && UI.closeMobileMenu && UI.closeMobileMenu()">
+    <main
+      id="app-body"
+      class="app-body"
+      onclick="
+        !event.target.closest('#app-header') &&
+          UI.closeMobileMenu &&
+          UI.closeMobileMenu()
+      "
+    >
       <!-- ── LEFT: Incident queue + dispatch ──────────────── -->
       <aside class="side-panel" id="left-panel">
         <div class="panel-header">
@@ -617,5 +652,7 @@
     <script src="js/resilience.js"></script>
     <script src="js/highlighter.js"></script>
     <script src="js/controls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <script src="js/tour.js"></script>
   </body>
 </html>

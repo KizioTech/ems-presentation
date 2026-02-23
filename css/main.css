@@ -2151,3 +2151,77 @@ body {
 .text-green {
   color: var(--green) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   TOUR (Driver.js) OVERRIDES
+══════════════════════════════════════════════════════════════ */
+.driver-popover {
+  background-color: var(--panel) !important;
+  color: var(--text-hi) !important;
+  border: 1px solid var(--border2) !important;
+  font-family: var(--font-ui) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
+  padding: 16px !important;
+}
+
+.driver-popover-title {
+  color: var(--accent) !important;
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.5px !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase;
+}
+
+.driver-popover-description {
+  color: var(--text) !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  margin-bottom: 16px !important;
+}
+
+.driver-popover-footer {
+  margin-top: 10px !important;
+  border-top: 1px solid var(--border) !important;
+  padding-top: 12px !important;
+}
+
+.driver-popover-footer button {
+  background-color: transparent !important;
+  color: var(--text-hi) !important;
+  border: 1px solid var(--border2) !important;
+  text-shadow: none !important;
+  font-family: var(--font-ui) !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 1px !important;
+  padding: 6px 12px !important;
+  border-radius: 4px !important;
+  transition: all 0.2s !important;
+}
+
+.driver-popover-footer button:hover {
+  background-color: var(--accent-dim) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.driver-popover-progress-text {
+  color: var(--text-lo) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.8rem !important;
+}
+
+.driver-popover-close-btn {
+  color: var(--text-lo) !important;
+  transition: color 0.2s !important;
+}
+
+.driver-popover-close-btn:hover {
+  color: var(--text-hi) !important;
+}
+
+.driver-popover-arrow {
+  border-color: var(--border2) !important;
+}

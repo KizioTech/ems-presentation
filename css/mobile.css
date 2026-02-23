@@ -59,6 +59,8 @@
     flex-direction: column;
     gap: 15px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    max-height: 80vh;
+    overflow-y: auto;
   }
   #app-header.mobile-menu-open .mobile-menu-content {
     transform: translateY(0);
