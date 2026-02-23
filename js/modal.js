@@ -260,6 +260,107 @@ font-size:.72rem;font-weight:700;letter-spacing:1px;cursor:${canDispatch?'pointe
     Routing.dispatchSingle(selected.incident.id());
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // NODE MODAL (Non-incident)
+  // Shows connectivity, base units, and incidents at a node
+  // ══════════════════════════════════════════════════════════════
+  function showNode(node) {
+    const d     = node.data();
+    const raw   = CY_NODES.find(n => n.data.id === d.id)?.data || d;
+    const incs  = INCIDENTS.filter(i => i.node_id === d.id);
+    const vehs  = VEHICLES.filter(v => v.base_node === d.id);
+    const units = State.getCenterUnits(d.id);
+
+    let html = `
+      <div class="modal-title">${raw.label || d.id}</div>
+      <div class="modal-subtitle">
+        ${d.id} · ${(raw.node_type||'').toUpperCase()}
+        ${raw.category ? ' · ' + raw.category.toUpperCase() : ''}
+        · ${(raw.zone||'').toUpperCase()} ZONE
+        ${units > 0 ? `· <span style="color:var(--green)">${units} unit${units!==1?'s':''} avail</span>` : ''}
+      </div>
+      <div class="modal-grid">
+    `;
+
+    // Left column
+    html += `<div>`;
+    if (vehs.length) {
+      html += `<div class="modal-section-head">Based Units</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+          ${vehs.map(v => `<span style="background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:4px;font-family:var(--font-mono);font-size:0.8rem;color:var(--text-hi)">${v.vehicle_id}</span>`).join('')}
+        </div>`;
+    }
+
+    if (incs.length) {
+      html += `<div class="modal-section-head">Active Incidents</div>`;
+      incs.forEach(inc => {
+        const sc = SEV_COLOR[inc.severity] || '#888';
+        html += `
+          <div style="display:flex;align-items:center;padding:8px;background:rgba(0,0,0,0.2);border:1px solid ${sc};margin-bottom:6px;border-radius:4px">
+            <span style="background:rgba(0,0,0,.3);border:1px solid ${sc};color:${sc};font-family:var(--font-mono);font-size:0.6rem;padding:2px 6px;margin-right:10px">
+              ${inc.severity.toUpperCase()}
+            </span>
+            <span style="font-size:.85rem;color:var(--text-hi)">${inc.incident_id}</span>
+            <span style="font-family:var(--font-mono);font-size:.7rem;color:var(--text-lo);margin-left:auto">
+              ${inc.call_time_formatted}
+            </span>
+          </div>`;
+      });
+    }
+    
+    // Right column
+    const edges  = Graph.cy.getElementById(d.id).connectedEdges();
+    const outE   = edges.filter(e => e.data('source') === d.id);
+    html += `</div><div>
+      <div class="modal-section-head">Connectivity</div>
+      <div style="display:flex;gap:20px;padding:14px;background:rgba(0,0,0,0.2);border-radius:4px">
+        <div><div style="font-family:var(--font-mono);font-size:1.4rem;color:var(--text-hi)">${outE.length}</div>
+             <div style="font-size:.7rem;color:var(--text-lo);letter-spacing:1px">OUT</div></div>
+        <div><div style="font-family:var(--font-mono);font-size:1.4rem;color:var(--text-hi)">${edges.length-outE.length}</div>
+             <div style="font-size:.7rem;color:var(--text-lo);letter-spacing:1px">IN</div></div>
+        <div><div style="font-family:var(--font-mono);font-size:1.4rem;color:var(--amber)">${outE.filter(e=>e.data('is_market_road')).length}</div>
+             <div style="font-size:.7rem;color:var(--text-lo);letter-spacing:1px">MKT</div></div>
+      </div>
+    </div></div>`; // close grid
+
+    open(html);
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // DISPATCHED ROUTE MODAL
+  // Shows information about an active route 
+  // ══════════════════════════════════════════════════════════════
+  function showRoute(info) {
+    const rankLabel = info.rank === 1 ? '1ST CHOICE' : info.rank === 2 ? '2ND CHOICE' : '3RD CHOICE';
+    const rankColor = info.rank === 1 ? '#00e898' : info.rank === 2 ? '#f0a500' : '#6898b8';
+    
+    let html = `
+      <div class="modal-title">Dispatched Route Analytics</div>
+      <div class="modal-subtitle">
+        ${info.centerLabel} &rarr; Node ${info.incidentId}
+        &nbsp;·&nbsp; <span style="color:${rankColor}">${rankLabel}</span>
+      </div>
+      
+      <p style="font-size:1rem;color:var(--text-hi);margin-bottom:20px;padding:12px;background:rgba(0,0,0,0.2);border-left:4px solid ${rankColor};border-radius:4px">
+        ${info.reason}
+      </p>
+
+      <div class="modal-section-head">Routing Metrics</div>
+      <div class="modal-grid">
+        <div class="modal-kv">
+          <div class="modal-row"><span>Estimated Time</span><span style="font-size:1rem;color:var(--text-hi)">${info.time.toFixed(1)} min</span></div>
+          <div class="modal-row"><span>Total Cost</span><span style="font-size:1rem;color:var(--text-hi)">${Math.round(info.cost).toLocaleString()} MWK</span></div>
+        </div>
+        <div class="modal-kv">
+          <div class="modal-row"><span>Route Reliability</span><span style="font-size:1rem;color:var(--text-hi)">${(info.reliability*100).toFixed(0)}%</span></div>
+          <div class="modal-row"><span>Edge Count (Hops)</span><span style="font-size:1rem;color:var(--text-hi)">${info.edgeCount}</span></div>
+        </div>
+      </div>
+    `;
+
+    open(html);
+  }
+
   // ── Helpers ────────────────────────────────────────────────────
   function _pctBar(label, pct, hint, color) {
     return `
@@ -292,6 +393,6 @@ font-size:.72rem;font-weight:700;letter-spacing:1px;cursor:${canDispatch?'pointe
     return `${r},${g},${b}`;
   }
 
-  return { open, close, closeOnOverlay, showEdge, showIncident, dispatchFromModal };
+  return { open, close, closeOnOverlay, showEdge, showIncident, showNode, showRoute, dispatchFromModal };
 
 })();

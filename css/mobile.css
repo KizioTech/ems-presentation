@@ -1,0 +1,225 @@
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* Header adjustments */
+  #app-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 10px;
+    gap: 8px;
+  }
+  .header-left {
+    width: 100%;
+    margin-bottom: 5px;
+  }
+  .mobile-menu-btn {
+    display: block; /* show on mobile */
+  }
+
+  /* Title Swap */
+  .title-desktop {
+    display: inline;
+  }
+  .title-mobile {
+    display: none;
+  }
+
+  /* Mobile Menu Dropdown Wrapper */
+  #app-header {
+    position: relative;
+  }
+  .mobile-menu-modal {
+    display: block;
+    position: absolute;
+    top: 100%;
+    right: 10px;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+    transform: translateY(-10px);
+  }
+  #app-header.mobile-menu-open .mobile-menu-modal {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .mobile-menu-content {
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    width: 320px;
+    max-width: 90vw;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  }
+  #app-header.mobile-menu-open .mobile-menu-content {
+    transform: translateY(0);
+  }
+
+  .mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    font-weight: 700;
+    color: var(--text-hi);
+    letter-spacing: 2px;
+  }
+  .mobile-menu-close {
+    background: transparent;
+    border: none;
+    color: var(--text-lo);
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+
+  /* Make stats and right tools grid-like inside modal */
+  .header-stats {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: transparent;
+    border: none;
+  }
+  .hstat {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    padding: 10px;
+    border: 1px solid var(--border);
+  }
+  .hstat-sep {
+    display: none;
+  }
+
+  .header-right {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
+  }
+  .hdr-tool-btn,
+  .policy-select {
+    width: 100%;
+    padding: 10px;
+    font-size: 0.9rem;
+    justify-content: center;
+  }
+
+  /* By default on mobile hide the stats and tools to save space */
+  .header-stats,
+  .header-right {
+    display: none;
+    width: 100%;
+  }
+
+  /* Show them when the menu is toggled open */
+  #app-header.mobile-menu-open .header-stats {
+    display: flex;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+  #app-header.mobile-menu-open .header-right {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 5px;
+  }
+
+  /* Body layout */
+  .app-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  /* Side panels as absolute overlays on mobile so they don't squish the map */
+  .side-panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 80vw;
+    z-index: 50;
+    background: rgba(10, 24, 40, 0.95);
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s ease;
+  }
+
+  /* Prevent side panels from shrinking to 36px on mobile so they can translate completely */
+  .side-panel.collapsed {
+    min-width: 280px !important;
+    width: 280px !important;
+    overflow: visible !important;
+  }
+
+  /* Left Panel */
+  #left-panel {
+    left: 0;
+    border-right: 1px solid var(--border);
+  }
+  .app-body.left-collapsed #left-panel {
+    transform: translateX(-100%);
+  }
+  /* Shift toggle outside panel so it remains accessible when fully collapsed */
+  .app-body.left-collapsed #left-panel .panel-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: -36px;
+    width: 36px;
+    height: 36px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    color: var(--text-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Right Panel */
+  #right-panel {
+    right: 0;
+    border-left: 1px solid var(--border);
+  }
+  .app-body.right-collapsed #right-panel {
+    transform: translateX(100%);
+  }
+  .app-body.right-collapsed #right-panel .panel-toggle-btn {
+    position: absolute;
+    top: 10px;
+    left: -36px;
+    width: 36px;
+    height: 36px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: 4px 0 0 4px;
+    color: var(--text-hi);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Ensure graph takes remaining space properly */
+  .graph-area {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+/* ── Orientation Prompt ───────────────────────────────────────── */
+@media screen and (max-width: 900px) and (orientation: portrait) {
+  #orientation-prompt:not(.dismissed) {
+    display: flex !important;
+  }
+}

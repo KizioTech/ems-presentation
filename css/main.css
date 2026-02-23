@@ -2,28 +2,28 @@
    EMS Operations Dashboard v4 — main.css
    ══════════════════════════════════════════════════════════════ */
 :root {
-  --bg: #060e18;
-  --panel: #0a1828;
-  --border: #112035;
-  --border2: #1c3355;
-  --accent: #00b8e0;
-  --accent-dim: rgba(0, 184, 224, 0.12);
-  --accent-glow: rgba(0, 184, 224, 0.4);
-  --green: #00d98b;
-  --amber: #f0a500;
-  --red: #f02040;
-  --gold: #e8c000;
-  --text: #6898b8;
-  --text-hi: #b8d8f0;
-  --text-lo: #2a4560;
-  --critical: #f01838;
-  --urgent: #f07800;
-  --moderate: #e8b800;
-  --minor: #30cc80;
-  --cong-free: #00d98b;
-  --cong-med: #f0a500;
-  --cong-heavy: #f06000;
-  --cong-jam: #f01838;
+  --bg: #03070c;
+  --panel: #060d15;
+  --border: #182c47;
+  --border2: #244268;
+  --accent: #00e0ff;
+  --accent-dim: rgba(0, 224, 255, 0.15);
+  --accent-glow: rgba(0, 224, 255, 0.5);
+  --green: #00ffaa;
+  --amber: #ffbb00;
+  --red: #ff3355;
+  --gold: #ffe000;
+  --text: #8fb8d8;
+  --text-hi: #e0f0ff;
+  --text-lo: #4a6c8e;
+  --critical: #ff1f40;
+  --urgent: #ff8800;
+  --moderate: #ffcc00;
+  --minor: #33e699;
+  --cong-free: #00ffaa;
+  --cong-med: #ffbb00;
+  --cong-heavy: #ff7700;
+  --cong-jam: #ff2244;
   /* Route colors */
   --route-0: #00ccff;
   --route-1: #00e898;
@@ -70,6 +70,7 @@ body {
   display: grid;
   grid-template-rows: var(--header-h) var(--timebar-h) 1fr;
 }
+/* ── Side Panels & Collapse ──────────────────────────────────── */
 .app-body {
   display: grid;
   grid-template-columns: var(--left-w) 1fr var(--right-w);
@@ -88,22 +89,116 @@ body {
   grid-template-columns: 36px 1fr 36px;
 }
 
-/* ── Header ─────────────────────────────────────────────────── */
-#app-header {
+.side-panel {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  transition:
+    min-width 0.3s ease,
+    width 0.3s ease;
+}
+.side-panel.right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+/* ── Orientation Prompt ───────────────────────────────────────── */
+.mobile-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(3, 7, 12, 0.95);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
-  background: rgba(8, 18, 30, 0.98);
-  border-bottom: 1px solid var(--border);
+  justify-content: center;
+  flex-direction: column;
+}
+
+.prompt-content {
+  background: var(--panel);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  max-width: 80%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.prompt-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  color: var(--accent);
+}
+.prompt-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.prompt-text {
+  font-size: 0.9rem;
+  color: var(--text-lo);
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+.prompt-btn {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 8px 24px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.prompt-btn:hover {
+  background: var(--accent-dim);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+#app-header {
   position: relative;
-  z-index: 100;
+  z-index: 1000;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
 }
 .header-left {
   display: flex;
   align-items: center;
   gap: 11px;
   flex-shrink: 0;
+}
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--text-hi);
+  font-size: 1.2rem;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mobile-menu-btn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 .logo {
   font-size: 1.3rem;
@@ -119,14 +214,14 @@ body {
   line-height: 1.25;
 }
 .header-title {
-  font-size: 0.72rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 2px;
   color: var(--text-hi);
 }
 .header-sub {
   font-family: var(--font-mono);
-  font-size: 0.56rem;
+  font-size: 0.65rem;
   color: var(--text-lo);
   letter-spacing: 0.8px;
 }
@@ -151,14 +246,12 @@ body {
   box-shadow: 0 0 8px var(--green);
   animation: blink 1.8s ease-in-out infinite;
 }
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.2;
-  }
+.mobile-menu-modal,
+.mobile-menu-content {
+  display: contents; /* on desktop, act like it's not there */
+}
+.mobile-menu-header {
+  display: none; /* hide internal modal header on desktop */
 }
 .header-stats {
   display: flex;
@@ -177,7 +270,7 @@ body {
 }
 .hstat-val {
   font-family: var(--font-mono);
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   color: var(--text-hi);
   line-height: 1;
 }
@@ -407,11 +500,6 @@ body {
 }
 
 /* Collapsed side panels */
-.side-panel {
-  transition:
-    min-width 0.3s ease,
-    width 0.3s ease;
-}
 .side-panel.collapsed {
   min-width: 36px !important;
   width: 36px !important;
@@ -445,8 +533,6 @@ body {
 .side-panel.collapsed .panel-header ~ .panel-header {
   display: none;
 }
-
-/* (time-control moved to .time-bar) */
 
 /* ══════════════════════════════════════════════════════════════
    MODAL OVERLAY
@@ -675,19 +761,13 @@ body {
 
 /* ── Panels (shared) ─────────────────────────────────────────── */
 .side-panel {
-  background: var(--panel);
   border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 .side-panel.right {
   border-right: none;
   border-left: 1px solid var(--border);
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 .panel-header {
   display: flex;

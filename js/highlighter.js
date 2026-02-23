@@ -27,16 +27,16 @@ window.Highlighter = (() => {
 
   // Per-style colour config  (type → { border, shadow })
   const TYPE_COLORS = {
-    hospital:     { border: '#f02040', shadow: 'rgba(240,32,64,',  size: 20 },
-    market:       { border: '#f0a500', shadow: 'rgba(240,165,0,',  size: 18 },
-    intersection: { border: '#00b8e0', shadow: 'rgba(0,184,224,',  size: 14 },
-    incident:     { border: '#ff3366', shadow: 'rgba(255,51,102,', size: 22 },
+    hospital:     { border: '#ffffff', shadow: 'rgba(255,255,255,',  size: 20 },
+    market:       { border: '#ffffff', shadow: 'rgba(255,255,255,',  size: 18 },
+    intersection: { border: '#ffffff', shadow: 'rgba(255,255,255,',  size: 14 },
+    incident:     { border: '#ffffff', shadow: 'rgba(255,255,255,', size: 22 },
   };
 
   const ZONE_COLORS = {
-    CBD:          { border: '#00e898', shadow: 'rgba(0,232,152,' },
-    residential:  { border: '#8080ff', shadow: 'rgba(128,128,255,' },
-    'peri-urban': { border: '#ff9900', shadow: 'rgba(255,153,0,' },
+    CBD:          { border: '#ffffff', shadow: 'rgba(255,255,255,' },
+    residential:  { border: '#ffffff', shadow: 'rgba(255,255,255,' },
+    'peri-urban': { border: '#ffffff', shadow: 'rgba(255,255,255,' },
   };
 
   // ── DOM helper ─────────────────────────────────────────────────

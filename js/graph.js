@@ -227,6 +227,13 @@ window.Graph = (() => {
           'shadow-offset-x':0,'shadow-offset-y':0,
         }
       },
+      // Locate Glow
+      { selector:'node.locate-active', style:{
+          'border-width':4, 'border-color':'#ffffff',
+          'shadow-blur':24, 'shadow-color':'#ffffff',
+          'shadow-opacity':1.0, 'shadow-offset-x':0, 'shadow-offset-y':0,
+        }
+      },
     ];
   }
 
@@ -286,6 +293,14 @@ window.Graph = (() => {
     const tooltip = document.getElementById('edge-tooltip');
     const canvas  = document.getElementById('cy');
 
+    function collapseOnMobile() {
+      if (window.innerWidth <= 900) {
+        const b = document.getElementById('app-body');
+        if (b && !b.classList.contains('left-collapsed')) window.togglePanel('left');
+        if (b && !b.classList.contains('right-collapsed')) window.togglePanel('right');
+      }
+    }
+
     // Edge hover → tooltip
     cy.on('mouseover', 'edge', evt => {
       evt.target.addClass('hovered');
@@ -306,10 +321,12 @@ window.Graph = (() => {
       const d = evt.target.data();
       const routeInfo = Routing.getRouteClickData(evt.target.id());
       if (routeInfo) {
-        _showRouteInfoPopup(evt, routeInfo);
+        Modal.showRoute(routeInfo);
+        collapseOnMobile();
         return;
       }
       Modal.showEdge(d);
+      collapseOnMobile();
     });
 
     // Node CLICK
@@ -322,57 +339,24 @@ window.Graph = (() => {
         const inc = INCIDENTS.find(i => i.node_id === d.id);
         if (inc) {
           Modal.showIncident(inc, d.id);
+          collapseOnMobile();
           return;
         }
       }
-      // Non-incident node → side panel
-      UI.showNodePanel(node);
+      // Non-incident node → modal
+      Modal.showNode(node);
+      collapseOnMobile();
     });
 
-    // Tap on background → close side panel + route info
+    // Tap on background → close UI state if needed
     cy.on('tap', evt => {
+      collapseOnMobile();
       if (evt.target === cy) {
         UI.closeNodePanel();
-        const popup = document.getElementById('route-info-popup');
-        if (popup) popup.remove();
+        cy.nodes().removeClass('locate-active');
+        cy.style().update();
       }
     });
-  }
-
-  // ── Route info popup ──────────────────────────────────────────
-  function _showRouteInfoPopup(evt, info) {
-    // Remove any existing popup
-    let popup = document.getElementById('route-info-popup');
-    if (popup) popup.remove();
-
-    const rankLabel = info.rank === 1 ? '1ST CHOICE' : info.rank === 2 ? '2ND CHOICE' : '3RD CHOICE';
-    const rankColor = info.rank === 1 ? '#00e898' : info.rank === 2 ? '#f0a500' : '#6898b8';
-    const lineType  = info.rank === 1 ? 'SOLID' : info.rank === 2 ? 'DASHED' : 'DOTTED';
-
-    popup = document.createElement('div');
-    popup.id = 'route-info-popup';
-    popup.innerHTML = `
-      <div class="rip-header">
-        <span class="rip-rank" style="background:rgba(from ${rankColor} r g b / .15);border-color:${rankColor};color:${rankColor}">${rankLabel}</span>
-        <span class="rip-line-type">${lineType} LINE</span>
-      </div>
-      <div class="rip-centre">${info.centerLabel} → Node ${info.incidentId}</div>
-      <div class="rip-grid">
-        <div><span class="rip-label">Time</span><span class="rip-val">${info.time.toFixed(1)} min</span></div>
-        <div><span class="rip-label">Cost</span><span class="rip-val">${Math.round(info.cost).toLocaleString()} MWK</span></div>
-        <div><span class="rip-label">Reliability</span><span class="rip-val">${(info.reliability*100).toFixed(0)}%</span></div>
-        <div><span class="rip-label">Hops</span><span class="rip-val">${info.edgeCount}</span></div>
-      </div>
-      <div class="rip-reason">${info.reason}</div>
-    `;
-
-    // Position near the click
-    const pos = evt.renderedPosition || evt.position;
-    const cyRect = document.getElementById('cy').getBoundingClientRect();
-    popup.style.left = (cyRect.left + pos.x + 20) + 'px';
-    popup.style.top  = (cyRect.top + pos.y - 10)  + 'px';
-
-    document.body.appendChild(popup);
   }
 
   return {

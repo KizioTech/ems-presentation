@@ -10,6 +10,7 @@
     />
     <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
     <link rel="stylesheet" href="css/main.css" />
+    <link rel="stylesheet" href="css/mobile.css" />
   </head>
   <body>
     <!-- ══════════════════════════════════════════════════════
@@ -26,11 +27,28 @@
       </div>
     </div>
 
+    <!-- Orientation Prompt Modal -->
+    <div id="orientation-prompt" class="mobile-prompt" style="display: none;">
+      <div class="prompt-content">
+        <div class="prompt-icon">📱 ⤾</div>
+        <div class="prompt-title">Please Rotate Device</div>
+        <div class="prompt-text">For the best experience, please rotate your device to landscape mode.</div>
+        <button class="prompt-btn" onclick="UI.dismissPrompt()">Done</button>
+      </div>
+    </div>
+
     <!-- ══════════════════════════════════════════════════════
-     HEADER
-══════════════════════════════════════════════════════ -->
+         SCRIPTS
+    ══════════════════════════════════════════════════════ -->
     <header id="app-header">
       <div class="header-left">
+        <button
+          id="mobile-menu-btn"
+          class="mobile-menu-btn"
+          onclick="UI.toggleMobileMenu()"
+        >
+          ☰
+        </button>
         <div class="logo">EMS<span class="logo-accent">OPS</span></div>
         <div class="header-meta">
           <div class="header-title">
@@ -43,70 +61,80 @@
         <div class="live-badge"><span class="live-dot"></span>LIVE SIM</div>
       </div>
 
-      <div class="header-stats">
-        <div class="hstat">
-          <span class="hstat-val" id="hs-nodes">40</span
-          ><span class="hstat-key">Nodes</span>
-        </div>
-        <div class="hstat-sep"></div>
-        <div class="hstat">
-          <span class="hstat-val" id="hs-edges">200</span
-          ><span class="hstat-key">Edges</span>
-        </div>
-        <div class="hstat-sep"></div>
-        <div class="hstat">
-          <span class="hstat-val text-red" id="hs-inc">15</span
-          ><span class="hstat-key">Incidents</span>
-        </div>
-        <div class="hstat-sep"></div>
-        <div class="hstat">
-          <span class="hstat-val text-amber" id="hs-queued">0</span
-          ><span class="hstat-key">Queued</span>
-        </div>
-        <div class="hstat-sep"></div>
-        <div class="hstat">
-          <span class="hstat-val text-green" id="hs-dispatched">0</span
-          ><span class="hstat-key">Dispatched</span>
-        </div>
-        <div class="hstat-sep"></div>
-        <div class="hstat">
-          <span class="hstat-val text-cyan" id="hs-avgtime">—</span
-          ><span class="hstat-key">Avg Route</span>
-        </div>
-      </div>
+      <div id="mobile-menu-modal" class="mobile-menu-modal">
+        <div class="mobile-menu-content">
+          <div class="mobile-menu-header">
+            <span>MENU</span>
+            <button class="mobile-menu-close" onclick="UI.closeMobileMenu()">✕</button>
+          </div>
+          <div class="header-stats">
+            <div class="hstat">
+              <span class="hstat-val" id="hs-nodes">40</span
+              ><span class="hstat-key">Nodes</span>
+            </div>
+            <div class="hstat-sep"></div>
+            <div class="hstat">
+              <span class="hstat-val" id="hs-edges">200</span
+              ><span class="hstat-key">Edges</span>
+            </div>
+            <div class="hstat-sep"></div>
+            <div class="hstat">
+              <span class="hstat-val text-red" id="hs-inc">15</span
+              ><span class="hstat-key">Incidents</span>
+            </div>
+            <div class="hstat-sep"></div>
+            <div class="hstat">
+              <span class="hstat-val text-amber" id="hs-queued">0</span
+              ><span class="hstat-key">Queued</span>
+            </div>
+            <div class="hstat-sep"></div>
+            <div class="hstat">
+              <span class="hstat-val text-green" id="hs-dispatched">0</span
+              ><span class="hstat-key">Dispatched</span>
+            </div>
+            <div class="hstat-sep"></div>
+            <div class="hstat">
+              <span class="hstat-val text-cyan" id="hs-avgtime">—</span
+              ><span class="hstat-key">Avg Route</span>
+            </div>
+          </div>
 
-      <div class="header-right">
-        <!-- Policy selector (dropdown) -->
-        <div class="policy-block">
-          <div class="policy-label">ROUTING POLICY</div>
-          <select
-            id="policy-select"
-            class="policy-select"
-            onchange="State.setPolicy(this.value)"
-          >
-            <option value="time" selected>⏱ Time</option>
-            <option value="cost">💰 Cost</option>
-            <option value="reliability">⚡ Reliability</option>
-            <option value="pareto">⬡ Pareto</option>
-          </select>
-        </div>
+          <div class="header-right">
+            <!-- Policy selector (dropdown) -->
+            <div class="policy-block">
+              <div class="policy-label">ROUTING POLICY</div>
+              <select
+                id="policy-select"
+                class="policy-select"
+                onchange="State.setPolicy(this.value); UI.closeMobileMenu && UI.closeMobileMenu()"
+              >
+                <option value="time" selected>⏱ Time</option>
+                <option value="cost">💰 Cost</option>
+                <option value="reliability">⚡ Reliability</option>
+                <option value="pareto">⬡ Pareto</option>
+              </select>
+            </div>
 
-        <!-- Tool buttons -->
-        <button
-          id="resilience-toggle"
-          class="hdr-tool-btn"
-          onclick="Resilience.toggle()"
-        >
-          ⬡ Resilience
-        </button>
-        <button
-          id="highlighter-toggle"
-          class="hdr-tool-btn"
-          onclick="Highlighter.toggle()"
-        >
-          ◎ Highlight
-        </button>
+            <!-- Tool buttons -->
+            <button
+              id="resilience-toggle"
+              class="hdr-tool-btn"
+              onclick="Resilience.toggle(); UI.closeMobileMenu && UI.closeMobileMenu()"
+            >
+              ⬡ Resilience
+            </button>
+            <button
+              id="highlighter-toggle"
+              class="hdr-tool-btn"
+              onclick="Highlighter.toggle(); UI.closeMobileMenu && UI.closeMobileMenu()"
+            >
+              ◎ Highlight
+            </button>
+          </div>
+        </div>
+        <!-- /.mobile-menu-content -->
       </div>
+      <!-- /#mobile-menu-modal -->
     </header>
 
     <!-- ══════════════════════════════════════════════════════
@@ -131,9 +159,9 @@
     </div>
 
     <!-- ══════════════════════════════════════════════════════
-     BODY
-══════════════════════════════════════════════════════ -->
-    <div class="app-body" id="app-body">
+         MAIN APP BODY
+    ══════════════════════════════════════════════════════ -->
+    <main id="app-body" class="app-body" onclick="!event.target.closest('#app-header') && UI.closeMobileMenu && UI.closeMobileMenu()">
       <!-- ── LEFT: Incident queue + dispatch ──────────────── -->
       <aside class="side-panel" id="left-panel">
         <div class="panel-header">
@@ -542,7 +570,7 @@
         </div>
         <div id="veh-list"></div>
       </aside>
-    </div>
+    </main>
 
     <!-- Edge tooltip -->
     <div id="edge-tooltip" class="edge-tooltip">

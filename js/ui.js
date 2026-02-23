@@ -12,6 +12,35 @@
  */
 window.UI = (() => {
 
+  // Auto-collapse panels on initial load if on mobile
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.innerWidth <= 900) {
+      if (window.togglePanel) {
+        window.togglePanel('left');
+        window.togglePanel('right');
+      }
+    }
+  });
+
+  // ── Mobile Menu Toggle ───────────────────────────────────────────
+  function toggleMobileMenu() {
+    const header = document.getElementById('app-header');
+    if (header) header.classList.toggle('mobile-menu-open');
+  }
+
+  function closeMobileMenu() {
+    const header = document.getElementById('app-header');
+    if (header) header.classList.remove('mobile-menu-open');
+  }
+
+  function dismissPrompt() {
+    const prompt = document.getElementById('orientation-prompt');
+    if (prompt) {
+      prompt.classList.add('dismissed');
+      prompt.style.display = 'none';
+    }
+  }
+
   const SEV_COLOR = {
     critical:'#f01838', urgent:'#f07800', moderate:'#e8b800', minor:'#30cc80',
   };
@@ -120,7 +149,21 @@ window.UI = (() => {
       .forEach(i => i.classList.remove('active'));
     const el = document.getElementById(`inc-item-${incidentId}`);
     if (el) el.classList.add('active');
+
+    // Pan constraints and zoom target
     Graph.cy.animate({ center:{ eles:node }, zoom:2.6 }, { duration:380, easing:'ease-in-out-cubic' });
+
+    // Apply bright white locate glow and trigger re-render
+    Graph.cy.nodes().removeClass('locate-active');
+    node.addClass('locate-active');
+    Graph.cy.style().update();
+
+    // Auto-collapse side panels on mobile
+    if (window.innerWidth <= 900) {
+      const body = document.getElementById('app-body');
+      if (!body.classList.contains('left-collapsed')) window.togglePanel('left');
+      if (!body.classList.contains('right-collapsed')) window.togglePanel('right');
+    }
   }
 
   // ── Severity filter ────────────────────────────────────────────
@@ -211,68 +254,8 @@ window.UI = (() => {
     });
   }
 
-  // ── Node Panel (non-incident nodes) ───────────────────────────
-  function showNodePanel(node) {
-    const d     = node.data();
-    const raw   = CY_NODES.find(n => n.data.id === d.id)?.data || d;
-    const incs  = INCIDENTS.filter(i => i.node_id === d.id);
-    const vehs  = VEHICLES.filter(v => v.base_node === d.id);
-    const units = State.getCenterUnits(d.id);
-
-    let html = `
-      <div class="np-title">${raw.label || d.id}</div>
-      <div class="np-sub">
-        ${d.id} · ${(raw.node_type||'').toUpperCase()}
-        ${raw.category ? ' · ' + raw.category.toUpperCase() : ''}
-        · ${(raw.zone||'').toUpperCase()} ZONE
-        ${units > 0 ? `· <span style="color:var(--green)">${units} unit${units!==1?'s':''} avail</span>` : ''}
-      </div>
-    `;
-
-    if (vehs.length) {
-      html += `<div class="np-section-head">Based Units</div>
-        <div class="np-veh-row">
-          ${vehs.map(v => `<span class="np-veh-chip">${v.vehicle_id}</span>`).join('')}
-        </div>`;
-    }
-
-    if (incs.length) {
-      html += `<div class="np-section-head">Active Incidents</div>`;
-      incs.forEach(inc => {
-        const sc = SEV_COLOR[inc.severity] || '#888';
-        html += `
-          <div class="np-inc-row">
-            <span class="np-inc-badge" style="background:rgba(0,0,0,.3);border:1px solid ${sc};color:${sc}">
-              ${inc.severity.toUpperCase()}
-            </span>
-            <span style="font-size:.78rem;color:var(--text-hi)">${inc.incident_id}</span>
-            <span style="font-family:var(--font-mono);font-size:.6rem;color:var(--text-lo);margin-left:auto">
-              ${inc.call_time_formatted}
-            </span>
-          </div>`;
-      });
-    }
-
-    const edges  = Graph.cy.getElementById(d.id).connectedEdges();
-    const outE   = edges.filter(e => e.data('source') === d.id);
-    html += `
-      <div class="np-section-head">Connectivity</div>
-      <div style="display:flex;gap:14px">
-        <div><div style="font-family:var(--font-mono);font-size:.9rem;color:var(--text-hi)">${outE.length}</div>
-             <div style="font-size:.6rem;color:var(--text-lo);letter-spacing:1px">OUT</div></div>
-        <div><div style="font-family:var(--font-mono);font-size:.9rem;color:var(--text-hi)">${edges.length-outE.length}</div>
-             <div style="font-size:.6rem;color:var(--text-lo);letter-spacing:1px">IN</div></div>
-        <div><div style="font-family:var(--font-mono);font-size:.9rem;color:var(--amber)">${outE.filter(e=>e.data('is_market_road')).length}</div>
-             <div style="font-size:.6rem;color:var(--text-lo);letter-spacing:1px">MKT</div></div>
-      </div>
-    `;
-
-    document.getElementById('node-panel-content').innerHTML = html;
-    document.getElementById('node-panel').classList.add('show');
-  }
-
   function closeNodePanel() {
-    document.getElementById('node-panel').classList.remove('show');
+    // Deprecated: UI now uses Modal.showNode
     document.querySelectorAll('.inc-item.active').forEach(i => i.classList.remove('active'));
   }
 
@@ -286,7 +269,7 @@ window.UI = (() => {
   return {
     init, refreshIncidentList, refreshDispatchLog, refreshVehicleList,
     toggleQueue, flyToIncident, updateIncidentStatus,
-    showNodePanel, closeNodePanel, applyFilter,
+     closeNodePanel, applyFilter, toggleMobileMenu, closeMobileMenu, dismissPrompt
   };
 
 })();
