@@ -49,7 +49,8 @@ window.Modal = (() => {
                       mult >= 1.2 ? '#f0a500' : '#00d98b';
 
     // Reliability class text
-    const relText = d.rel_class === 'medium' ? 'MEDIUM (stable)' : `LOW (γ=${d.gamma})`;
+    const dispGamma = (d.dynamicGamma ?? (d.gamma || 0)).toFixed(3);
+    const relText = d.rel_class === 'medium' ? 'MEDIUM (stable)' : `LOW (γ=${dispGamma})`;
 
     // Road type description
     const roadDesc = d.road_type === 'trunk'    ? `Trunk · ${d.lanes}-lane arterial` :
@@ -93,7 +94,7 @@ window.Modal = (() => {
             </div>
             <div class="modal-row">
               <span>Failure Rate γ</span>
-              <span>${d.gamma}</span>
+              <span>${dispGamma}</span>
             </div>
           </div>
         </div>
@@ -102,13 +103,13 @@ window.Modal = (() => {
         <div>
           <div class="modal-section-head">Network Criticality</div>
           <div class="modal-kv" style="margin-bottom:14px">
-            <div class="modal-row"><span>Criticality ρ</span><span style="color:${_critColor(d.criticality)}">${(d.criticality||0).toFixed(4)}</span></div>
-            <div class="modal-row"><span>Class</span><span>${_critClass(d.criticality)}</span></div>
+            <div class="modal-row"><span>Criticality ρ</span><span style="color:${_critColor(d.dynamicCrit ?? d.criticality)}">${(d.dynamicCrit ?? (d.criticality || 0)).toFixed(4)}</span></div>
+            <div class="modal-row"><span>Class</span><span>${_critClass(d.dynamicCrit ?? d.criticality)}</span></div>
           </div>
           <!-- ρ bar -->
           <div style="margin-bottom:14px">
             <div class="pct-track" style="height:6px">
-              <div class="pct-fill" style="width:${(d.criticality||0)*100}%;background:${_critColor(d.criticality)}"></div>
+              <div class="pct-fill" style="width:${(d.dynamicCrit ?? (d.criticality || 0))*100}%;background:${_critColor(d.dynamicCrit ?? d.criticality)}"></div>
             </div>
             <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:.52rem;color:var(--text-lo);margin-top:3px">
               <span>ρ = 0</span><span>ρ = 1.0</span>
@@ -165,8 +166,8 @@ window.Modal = (() => {
       const units  = State.getCenterUnits(cId);
       const isPto  = paretoIds.has(cId);
       const isSel  = cId === selectedId;
-      const badge  = isSel  ? `<span style="color:var(--green);font-size:.6rem;font-family:var(--font-mono)">★ RECOMMENDED</span>` :
-                     isPto  ? `<span style="color:var(--accent);font-size:.6rem;font-family:var(--font-mono)">⬡ PARETO</span>` :
+      const badge  = isSel  ? `<span style="color:var(--green);font-size:.6rem;font-family:var(--font-mono)"><i class="fa-solid fa-star"></i> RECOMMENDED</span>` :
+                     isPto  ? `<span style="color:var(--accent);font-size:.6rem;font-family:var(--font-mono)"><i class="fa-solid fa-circle-nodes"></i> PARETO</span>` :
                                `<span style="color:var(--text-lo);font-size:.6rem;font-family:var(--font-mono)">NON-OPTIMAL</span>`;
       const border = isSel ? 'var(--green)' : isPto ? 'var(--accent)' : 'var(--border2)';
       const avail  = units > 0 ? 'DISPATCH' : 'NO UNITS';
@@ -249,10 +250,7 @@ font-size:.72rem;font-weight:700;letter-spacing:1px;cursor:${canDispatch?'pointe
     if (!result) return;
 
     const policy = State.getPolicy();
-    // selectByPolicy with single solution still works
-    Routing['_commitAssignmentPublic']
-      ? Routing['_commitAssignmentPublic'](result, policy, [result])
-      : _commit(result, policy);
+    Routing.commitSpecific(centerId, incidentNodeId);
   }
 
   // fallback commit

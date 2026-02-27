@@ -15,18 +15,35 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
     />
+    <link
+      rel="preload"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      as="style"
+      onload="
+        this.onload = null;
+        this.rel = 'stylesheet';
+      "
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      />
+    </noscript>
   </head>
   <body>
     <!-- ══════════════════════════════════════════════════════
      FULLSCREEN MODAL (edge click / node click)
-══════════════════════════════════════════════════════ -->
+  ══════════════════════════════════════════════════════ -->
     <div
       id="modal-overlay"
       class="modal-overlay"
       onclick="Modal.closeOnOverlay(event)"
     >
       <div id="modal-box" class="modal-box">
-        <button class="modal-close-btn" onclick="Modal.close()">✕ CLOSE</button>
+        <button class="modal-close-btn" onclick="Modal.close()">
+          <i class="fa-solid fa-xmark"></i> CLOSE
+        </button>
         <div id="modal-content"></div>
       </div>
     </div>
@@ -34,7 +51,10 @@
     <!-- Orientation Prompt Modal -->
     <div id="orientation-prompt" class="mobile-prompt" style="display: none">
       <div class="prompt-content">
-        <div class="prompt-icon">📱 ⤾</div>
+        <div class="prompt-icon">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <i class="fa-solid fa-rotate-right"></i>
+        </div>
         <div class="prompt-title">Please Rotate Device</div>
         <div class="prompt-text">
           For the best experience, please rotate your device to landscape mode.
@@ -53,7 +73,7 @@
           class="mobile-menu-btn"
           onclick="UI.toggleMobileMenu()"
         >
-          ☰
+          <i class="fa-solid fa-bars"></i>
         </button>
         <div class="logo">EMS<span class="logo-accent">OPS</span></div>
         <div class="header-meta">
@@ -64,7 +84,6 @@
             // G(V=40,E=200) · MULTI-OBJECTIVE ROUTING · PARETO-OPTIMAL DISPATCH
           </div>
         </div>
-        <div class="live-badge"><span class="live-dot"></span>LIVE SIM</div>
       </div>
 
       <div id="mobile-menu-modal" class="mobile-menu-modal">
@@ -72,7 +91,7 @@
           <div class="mobile-menu-header">
             <span>MENU</span>
             <button class="mobile-menu-close" onclick="UI.closeMobileMenu()">
-              ✕
+              <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
           <div class="header-stats">
@@ -119,14 +138,36 @@
                   UI.closeMobileMenu && UI.closeMobileMenu();
                 "
               >
-                <option value="time" selected>⏱ Time</option>
-                <option value="cost">💰 Cost</option>
-                <option value="reliability">⚡ Reliability</option>
-                <option value="pareto">⬡ Pareto</option>
+                <option value="time" selected>
+                  <i class="fa-solid fa-clock"></i> Time
+                </option>
+                <option value="cost">
+                  <i class="fa-solid fa-coins"></i> Cost
+                </option>
+                <option value="reliability">
+                  <i class="fa-solid fa-bolt"></i> Reliability
+                </option>
+                <option value="pareto">
+                  <i class="fa-solid fa-circle-nodes"></i> Pareto
+                </option>
               </select>
             </div>
 
             <!-- Tool buttons -->
+            <button
+              onclick="Demo.run()"
+              class="hdr-tool-btn"
+              title="Run scripted demo"
+            >
+              <i class="fa-solid fa-play"></i> DEMO
+            </button>
+            <button
+              onclick="hardReset()"
+              class="hdr-tool-btn"
+              title="Reset all"
+            >
+              <i class="fa-solid fa-rotate-right"></i> RESET
+            </button>
             <button
               id="tour-btn"
               class="hdr-tool-btn"
@@ -135,7 +176,7 @@
                 UI.closeMobileMenu && UI.closeMobileMenu();
               "
             >
-              ℹ Tour
+              <i class="fa-solid fa-circle-info"></i> Tour
             </button>
             <button
               id="resilience-toggle"
@@ -145,7 +186,7 @@
                 UI.closeMobileMenu && UI.closeMobileMenu();
               "
             >
-              ⬡ Resilience
+              <i class="fa-brands fa-hive"></i> Resilience
             </button>
             <button
               id="highlighter-toggle"
@@ -155,7 +196,7 @@
                 UI.closeMobileMenu && UI.closeMobileMenu();
               "
             >
-              ◎ Highlight
+              <i class="fa-regular fa-circle-dot"></i> Highlight
             </button>
           </div>
         </div>
@@ -208,7 +249,7 @@
             onclick="togglePanel('left')"
             title="Collapse panel"
           >
-            «
+            <i class="fa-solid fa-angles-left"></i>
           </button>
         </div>
 
@@ -221,10 +262,18 @@
             onchange="UI.applyFilter(this.value)"
           >
             <option value="all" selected>All Severities</option>
-            <option value="critical">🔴 Critical</option>
-            <option value="urgent">🟠 Urgent</option>
-            <option value="moderate">🟡 Moderate</option>
-            <option value="minor">🟢 Minor</option>
+            <option value="critical">
+              <i class="fa-solid fa-circle" style="color: red"></i> Critical
+            </option>
+            <option value="urgent">
+              <i class="fa-solid fa-circle" style="color: orange"></i> Urgent
+            </option>
+            <option value="moderate">
+              <i class="fa-solid fa-circle" style="color: yellow"></i> Moderate
+            </option>
+            <option value="minor">
+              <i class="fa-solid fa-circle" style="color: green"></i> Minor
+            </option>
           </select>
         </div>
 
@@ -240,7 +289,7 @@
           </div>
           <div class="dq-actions">
             <button class="dq-clear-btn" onclick="Routing.clearAll()">
-              ✕ Clear
+              <i class="fa-solid fa-xmark"></i> Clear
             </button>
             <button
               class="dq-dispatch-btn"
@@ -248,7 +297,7 @@
               onclick="Routing.dispatchQueue()"
               disabled
             >
-              ▶ DISPATCH ALL
+              <i class="fa-solid fa-play"></i> DISPATCH ALL
             </button>
           </div>
         </div>
@@ -282,7 +331,7 @@
         <!-- Resilience panel -->
         <div id="resilience-panel" class="tool-panel resilience-panel">
           <div class="tool-panel-header amber">
-            <span class="tp-title"><span>⬡</span> RESILIENCE ANALYSIS</span>
+            <span class="tp-title"><span><i class="fa-brands fa-hive"></i></span> RESILIENCE ANALYSIS</span>
             <button class="tp-close-btn" onclick="Resilience.toggle()">
               EXIT
             </button>
@@ -467,7 +516,7 @@
                 data-style="both"
                 onclick="Highlighter.setStyle('both', this)"
               >
-                ⬤ Both
+                <i class="fa-solid fa-circle"></i> Both
               </button>
             </div>
           </div>
@@ -476,14 +525,16 @@
               >No nodes highlighted</span
             >
             <button class="link-btn" onclick="Highlighter.clearAll()">
-              ✕ Clear
+              <i class="fa-solid fa-xmark"></i> Clear
             </button>
           </div>
         </div>
 
         <!-- Node detail panel (non-incident nodes) -->
         <div id="node-panel" class="node-panel">
-          <button class="np-close" onclick="UI.closeNodePanel()">✕</button>
+          <button class="np-close" onclick="UI.closeNodePanel()">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
           <div id="node-panel-content"></div>
         </div>
       </main>
@@ -498,7 +549,7 @@
             onclick="togglePanel('right')"
             title="Collapse panel"
           >
-            »
+            <i class="fa-solid fa-angles-right"></i>
           </button>
         </div>
 
@@ -589,7 +640,7 @@
             onclick="Routing.clearAll()"
             style="font-size: 0.65rem"
           >
-            ✕ Clear
+            <i class="fa-solid fa-xmark"></i> Clear
           </button>
         </div>
         <div id="dispatch-log" class="dispatch-log">
@@ -652,6 +703,7 @@
     <script src="js/resilience.js"></script>
     <script src="js/highlighter.js"></script>
     <script src="js/controls.js"></script>
+    <script src="js/demo.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
     <script src="js/tour.js"></script>
   </body>

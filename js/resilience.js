@@ -151,7 +151,7 @@ window.Resilience = (() => {
     let count = 0;
     Graph.cy.edges().not('.severed').forEach(edge => {
       const d   = edge.data();
-      const val = mode === 'rho' ? (d.criticality || 0) : (d.gamma || 0);
+      const val = mode === 'rho' ? (d.dynamicCrit ?? (d.criticality || 0)) : (d.dynamicGamma ?? (d.gamma || 0));
       if (val >= threshold) {
         edge.addClass('candidate');
         count++;
@@ -191,7 +191,7 @@ window.Resilience = (() => {
     // Re-check if it should become a candidate again
     if (active) {
       const d   = edge.data();
-      const val = mode === 'rho' ? (d.criticality || 0) : (d.gamma || 0);
+      const val = mode === 'rho' ? (d.dynamicCrit ?? (d.criticality || 0)) : (d.dynamicGamma ?? (d.gamma || 0));
       if (val >= threshold) edge.addClass('candidate');
     }
 
@@ -221,8 +221,8 @@ window.Resilience = (() => {
 
     list.innerHTML = removedEdges.map(r => {
       const d   = r.data;
-      const rho = (d.criticality || 0).toFixed(3);
-      const gam = (d.gamma       || 0).toFixed(3);
+      const rho = (d.dynamicCrit ?? (d.criticality || 0)).toFixed(3);
+      const gam = (d.dynamicGamma ?? (d.gamma       || 0)).toFixed(3);
       const len = (d.length_km   || 0).toFixed(2);
       const rt  = (d.road_type   || '').toUpperCase();
       const val = mode === 'rho' ? `ρ=${rho}` : `γ=${gam}`;

@@ -59,6 +59,7 @@
 
     // Update graph + stats
     Graph.setHour(hour);
+    Routing.buildEdgeStats();
     _refreshStats(profile);
     Routing.updateActiveRoutes(hour);
   }
@@ -108,11 +109,27 @@ window.togglePanel = function(side) {
   body.classList.toggle(side + '-collapsed', isCollapsed);
 
   if (side === 'left') {
-    btn.textContent = isCollapsed ? '»' : '«';
+    btn.innerHTML = isCollapsed ? '<i class="fa-solid fa-angles-right"></i>' : '<i class="fa-solid fa-angles-left"></i>';
   } else {
-    btn.textContent = isCollapsed ? '«' : '»';
+    btn.innerHTML = isCollapsed ? '<i class="fa-solid fa-angles-left"></i>' : '<i class="fa-solid fa-angles-right"></i>';
   }
 
   // Resize Cytoscape after CSS transition completes (300ms)
   setTimeout(() => { if (Graph.cy) Graph.cy.resize(); }, 320);
+};
+
+// ── Hard Reset ────────────────────────────────────────────────────
+window.hardReset = function() {
+  if (window.Routing && window.Routing.clearAll) Routing.clearAll();
+  const slider = document.getElementById('time-slider');
+  if (slider) {
+    slider.value = 0;
+    slider.dispatchEvent(new Event('input'));
+  }
+  if (window.State && window.State.setPolicy) State.setPolicy('time');
+  const policySelect = document.getElementById('policy-select');
+  if (policySelect) policySelect.value = 'time';
+  
+  if (window.Highlighter && window.Highlighter.clearAll) Highlighter.clearAll();
+  if (window.Resilience && window.Resilience.restoreAll) Resilience.restoreAll();
 };

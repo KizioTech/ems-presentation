@@ -57,15 +57,6 @@ window.Tour = (() => {
           }
         },
         {
-          element: '#route-legend',
-          popover: {
-            title: 'Optimal Route Visualization',
-            description: 'When dispatches are active, the optimal paths are drawn on the map. This legend shows active missions and their performance scores across different objectives.',
-            side: 'left',
-            align: 'start'
-          }
-        },
-        {
           element: '#time-bar',
           popover: {
             title: 'Time & Traffic Simulator',
@@ -78,7 +69,7 @@ window.Tour = (() => {
           element: '#resilience-toggle',
           popover: {
             title: 'Resilience Analysis',
-            description: 'Toggle this to test network vulnerabilities. You can simulate blocked roads by clicking on them based on their criticality.',
+            description: 'Toggle this to test network vulnerabilities. You can simulate blocked roads by clicking on them based on their criticality score (ρ).',
             side: 'bottom',
             align: 'start'
           }
@@ -95,7 +86,7 @@ window.Tour = (() => {
         {
           element: '#right-panel',
           popover: {
-            title: 'Network & Dispatch status',
+            title: 'Network & Dispatch Status',
             description: 'View the map legend, live traffic stats, real-time dispatch logs, and available vehicles.',
             side: 'left',
             align: 'start'
@@ -103,34 +94,25 @@ window.Tour = (() => {
         }
       ]
     });
-
-    // Check if tour has been shown
-    if (!localStorage.getItem('ems_tour_seen')) {
-      setTimeout(() => {
-        start();
-      }, 1000);
-    }
   }
 
   function start() {
     if (driverObj) {
       if (window.innerWidth <= 900) {
-        // Expand panels in mobile to show elements correctly during the tour
         const body = document.getElementById('app-body');
         if (body.classList.contains('left-collapsed')) window.togglePanel('left');
         if (body.classList.contains('right-collapsed')) window.togglePanel('right');
       }
       driverObj.drive();
-      localStorage.setItem('ems_tour_seen', 'true');
     }
   }
 
   return { init, start };
 })();
 
+// ── Init tour on load (manual start only — no auto-trigger) ────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Try to initialize on load
   setTimeout(() => {
     Tour.init();
-  }, 500); // Give cytoscape and UI time to render first
+  }, 500);
 });

@@ -85,7 +85,7 @@ window.UI = (() => {
         <button class="inc-act-btn single"
                 title="Single dispatch — compute optimal route now"
                 onclick="Routing.dispatchSingle('${inc.node_id}')">
-          ▶ Dispatch
+          <i class="fa-solid fa-play"></i> Dispatch
         </button>
         <button class="inc-act-btn ${isQ ? 'queue-remove' : 'queue-add'}"
                 id="queue-btn-${inc.incident_id}"
@@ -96,7 +96,7 @@ window.UI = (() => {
                 style="border-color:var(--border2);color:var(--text-lo)"
                 title="Open on graph"
                 onclick="UI.flyToIncident('${inc.node_id}', '${inc.incident_id}')">
-          ⊙ Locate
+          <i class="fa-solid fa-location-dot"></i> Locate
         </button>
       </div>
     `;
@@ -214,10 +214,10 @@ window.UI = (() => {
             <span style="color:${sevCol}">[${sev}]</span>
           </div>
           <div class="de-scores">
-            <span class="de-score">⏱ <span>${a.scores.time}min</span></span>
-            <span class="de-score">💰 <span>${a.scores.cost.toLocaleString()}</span></span>
-            <span class="de-score">⚡ <span>${a.scores.reliability}%</span></span>
-            <span class="de-score">⬡ <span>${a.paretoSize} Pareto</span></span>
+            <span class="de-score"><i class="fa-solid fa-clock"></i> <span>${a.scores.time}min</span></span>
+            <span class="de-score"><i class="fa-solid fa-coins"></i> <span>${a.scores.cost.toLocaleString()}</span></span>
+            <span class="de-score"><i class="fa-solid fa-bolt"></i> <span>${a.scores.reliability}%</span></span>
+            <span class="de-score"><i class="fa-solid fa-circle-nodes"></i> <span>${a.paretoSize} Pareto</span></span>
           </div>
         </div>
       `;
@@ -247,7 +247,7 @@ window.UI = (() => {
         <div class="veh-chip ${busy ? 'busy' : ''}">${v.vehicle_id}</div>
         <div>
           <div class="veh-name">${baseLabel}</div>
-          <div class="veh-sub">${busy ? '🔴 DISPATCHED' : '🟢 available'} · crew ${v.crew_size}</div>
+          <div class="veh-sub">${busy ? '<i class="fa-solid fa-circle" style="color:red"></i> DISPATCHED' : '<i class="fa-solid fa-circle" style="color:green"></i> available'} · crew ${v.crew_size}</div>
         </div>
       `;
       container.appendChild(el);
@@ -307,7 +307,8 @@ window.Tooltip = (() => {
       `${Math.round(d.total_cost||0).toLocaleString()}`;
 
     const re = document.getElementById('et-rel');
-    re.textContent = `${d.rel_class||'low'}  γ=${d.gamma||0}`;
+    const dispGamma = (d.dynamicGamma ?? (d.gamma || 0)).toFixed(3);
+    re.textContent = `${d.rel_class||'low'}  γ=${dispGamma}`;
     re.style.color = d.rel_class==='medium' ? '#00d98b' : '#4488aa';
 
     const cr = document.getElementById('et-crit');

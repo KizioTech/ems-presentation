@@ -80,8 +80,22 @@ window.Graph = (() => {
     // Criticality increases with congestion (mult) and has a slight 
     // time-of-day modulation (sine wave to simulate peak-hour importance)
     const timeMod = 1.0 + 0.2 * Math.sin((hour / 24) * 2 * Math.PI - Math.PI / 2);
-    const congMod = 1.0 + (mult - 1.0) * 0.5;
+    // If mult > 1, criticality grows non-linearly
+    const congMod = 1.0 + Math.pow(Math.max(0, mult - 1.0), 1.5) * 0.8;
     return Math.min(1.0, baseCrit * timeMod * congMod);
+  }
+
+  // ── Dynamic reliability modulation ─────────────────────────────
+  function getReliabilityForHour(baseGamma, hour, mult) {
+    // Less congestion = more reliable (lower failure rate gamma). 
+    // mult=1 means free-flowing, so we halve the failure rate.
+    // mult>1 means congestion, failure rate climbs up to or past the base.
+    if (mult <= 1.0) {
+      return baseGamma * 0.5;
+    }
+    // As multiplier increases, failure rate rises up to 1.0
+    const congPenalty = Math.pow(mult - 1.0, 1.2) * 0.4;
+    return Math.min(1.0, (baseGamma * 0.5) + congPenalty);
   }
 
   // ── Node visual params by type ─────────────────────────────────
@@ -125,7 +139,9 @@ window.Graph = (() => {
       const d    = e.data;
       const mult = getMultiplierForHour(0, d.is_market_road);
       const col  = multToColor(mult);
-      const w    = edgeWidth(d.road_type, d.criticality||0);
+      const crit = getCriticalityForHour(d.criticality||0, 0, mult);
+      const gamma= getReliabilityForHour(d.gamma||0, 0, mult);
+      const w    = edgeWidth(d.road_type, crit);
       elements.push({
         data: {
           ...d,
@@ -134,6 +150,8 @@ window.Graph = (() => {
           edgeW:       w,
           currentMult: mult,
           roadType:    d.road_type,
+          dynamicCrit: crit,
+          dynamicGamma:gamma,
         },
       });
     });
@@ -246,11 +264,13 @@ window.Graph = (() => {
       const hour = 0; // default for reapply
       const col  = multToColor(mult);
       const crit = getCriticalityForHour(d.criticality || 0, hour, mult);
+      const gamma = getReliabilityForHour(d.gamma || 0, hour, mult);
       const w    = edgeWidth(d.road_type, crit);
       edge.data('lineColor',   col);
       edge.data('arrowColor',  col);
       edge.data('edgeW',       w);
       edge.data('dynamicCrit', crit);
+      edge.data('dynamicGamma',gamma);
     });
     cy.style().update();
   }
@@ -263,12 +283,14 @@ window.Graph = (() => {
       const mult = getMultiplierForHour(hour, d.is_market_road);
       const col  = multToColor(mult);
       const crit = getCriticalityForHour(d.criticality || 0, hour, mult);
+      const gamma= getReliabilityForHour(d.gamma || 0, hour, mult);
       const w    = edgeWidth(d.road_type, crit);
       edge.data('lineColor',   col);
       edge.data('arrowColor',  col);
       edge.data('edgeW',       w);
       edge.data('currentMult', mult);
       edge.data('dynamicCrit', crit);
+      edge.data('dynamicGamma',gamma);
     });
     cy.style().update();
   }

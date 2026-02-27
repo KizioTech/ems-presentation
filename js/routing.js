@@ -9,10 +9,7 @@
  *   4. paretoFilter(solutions)         → non-dominated set
  *   5. selectByPolicy(paretoSet)       → pick by active policy
  *   6. clearAll()                      → reset graph + state
- *
- * The routing engine is generalised: it filters centers by
- * `available_units > 0` and `service_type` matching.
- * Dijkstra weight = current congested travel time per edge.
+ *   7. commitSpecific(center,incident) → force-commit a chosen pair
  *
  * Exposes: window.Routing
  */
@@ -20,13 +17,13 @@ window.Routing = (() => {
 
   // ── Pre-compute global edge stats for percentile ranking ───────
   let edgeStats = null;
-  let activeRankedRoutes = []; // Track currently drawn routes for live updates
+  let activeRankedRoutes = [];
 
   function buildEdgeStats() {
-    const times  = CY_EDGES.map(e => e.data.base_time);
+    const times  = CY_EDGES.map(e => (e.data.base_time || 0) * (e.data.currentMult || 1));
     const costs  = CY_EDGES.map(e => e.data.total_cost || 0);
-    const crits  = CY_EDGES.map(e => e.data.criticality || 0);
-    const gammas = CY_EDGES.map(e => e.data.gamma || 0);
+    const crits  = CY_EDGES.map(e => e.data.dynamicCrit ?? (e.data.criticality || 0));
+    const gammas = CY_EDGES.map(e => e.data.dynamicGamma ?? (e.data.gamma || 0));
     edgeStats = {
       time:        { arr: times.slice().sort((a,b)=>a-b), min:Math.min(...times), max:Math.max(...times) },
       cost:        { arr: costs.slice().sort((a,b)=>a-b), min:Math.min(...costs), max:Math.max(...costs) },
@@ -36,7 +33,6 @@ window.Routing = (() => {
   }
 
   function percentileRank(arr, value) {
-    // what fraction of values are ≤ this value
     let lo = 0, hi = arr.length;
     while (lo < hi) { const mid = (lo+hi)>>1; if(arr[mid]<=value) lo=mid+1; else hi=mid; }
     return Math.round((lo / arr.length) * 100);
@@ -45,10 +41,10 @@ window.Routing = (() => {
   function getEdgePercentiles(edgeData) {
     if (!edgeStats) buildEdgeStats();
     return {
-      time:        percentileRank(edgeStats.time.arr,        edgeData.base_time     || 0),
+      time:        percentileRank(edgeStats.time.arr,        (edgeData.base_time || 0) * (edgeData.currentMult || 1)),
       cost:        percentileRank(edgeStats.cost.arr,        edgeData.total_cost    || 0),
-      criticality: percentileRank(edgeStats.criticality.arr, edgeData.criticality   || 0),
-      reliability: percentileRank(edgeStats.reliability.arr, edgeData.gamma         || 0),
+      criticality: percentileRank(edgeStats.criticality.arr, edgeData.dynamicCrit ?? (edgeData.criticality || 0)),
+      reliability: percentileRank(edgeStats.reliability.arr, edgeData.dynamicGamma ?? (edgeData.gamma || 0)),
     };
   }
 
@@ -82,18 +78,17 @@ window.Routing = (() => {
 
     if (!path || path.length === 0 || !isFinite(distTime)) return null;
 
-    // Sum path metrics
     let totalCost = 0, totalGamma = 0, edgeCount = 0;
     path.edges().forEach(e => {
       const d = e.data();
       totalCost  += d.total_cost    || 0;
-      totalGamma += d.gamma         || 0;
+      totalGamma += d.dynamicGamma ?? (d.gamma || 0);
       edgeCount++;
     });
 
     const avgGamma   = edgeCount > 0 ? totalGamma / edgeCount : 0;
     const balance    = 1 / Math.max(1, State.getCenterUnits(center.data('id')));
-    const reliability= 1 - avgGamma;  // lower gamma = higher reliability
+    const reliability= 1 - avgGamma;
 
     return {
       center, incident, path,
@@ -106,11 +101,7 @@ window.Routing = (() => {
   }
 
   // ── Pareto filtering ───────────────────────────────────────────
-  // A solution S1 dominates S2 if S1 is at least as good on ALL objectives
-  // and strictly better on at least one.
-  // Objectives: minimise time, cost, balance; maximise reliability.
   function dominates(a, b) {
-    // normalise reliability so all objectives are "lower = better"
     const relA = 1 - a.reliability, relB = 1 - b.reliability;
     return (
       a.time    <= b.time    &&
@@ -138,22 +129,15 @@ window.Routing = (() => {
     if (paretoSet.length === 1) return paretoSet[0];
 
     switch (policy) {
-      case 'time':
-        return paretoSet.reduce((b,c) => c.time < b.time ? c : b);
-      case 'cost':
-        return paretoSet.reduce((b,c) => c.cost < b.cost ? c : b);
-      case 'reliability':
-        return paretoSet.reduce((b,c) => c.reliability > b.reliability ? c : b);
-      case 'pareto':
-        // Balanced: normalise and sum ranks
-        return selectBalanced(paretoSet);
-      default:
-        return paretoSet[0];
+      case 'time':        return paretoSet.reduce((b,c) => c.time < b.time ? c : b);
+      case 'cost':        return paretoSet.reduce((b,c) => c.cost < b.cost ? c : b);
+      case 'reliability': return paretoSet.reduce((b,c) => c.reliability > b.reliability ? c : b);
+      case 'pareto':      return selectBalanced(paretoSet);
+      default:            return paretoSet[0];
     }
   }
 
   function selectBalanced(set) {
-    // Compute min/max for normalisation within this Pareto set
     const times  = set.map(s => s.time);
     const costs  = set.map(s => s.cost);
     const rels   = set.map(s => s.reliability);
@@ -161,17 +145,15 @@ window.Routing = (() => {
     const norm   = (v, arr) => (v - Math.min(...arr)) / range(arr);
 
     return set.reduce((best, s) => {
-      // Weighted composite: 40% time, 30% cost, 30% reliability
       const score = 0.4 * norm(s.time, times) +
                     0.3 * norm(s.cost, costs) +
-                    0.3 * (1 - norm(s.reliability, rels)); // lower = better
+                    0.3 * (1 - norm(s.reliability, rels));
       s._balanceScore = score;
       return (!best || score < best._balanceScore) ? s : best;
     }, null);
   }
 
   // ── Single dispatch ────────────────────────────────────────────
-  // Shows top 3 ranked routes with animation, commits the best one.
   function dispatchSingle(incidentId) {
     const incidentNode = Graph.cy.getElementById(incidentId);
     if (!incidentNode.length) return;
@@ -182,7 +164,6 @@ window.Routing = (() => {
       return;
     }
 
-    // Evaluate all center→incident pairs
     const solutions = [];
     centers.forEach(center => {
       const result = evaluateRoute(center, incidentNode);
@@ -191,34 +172,26 @@ window.Routing = (() => {
 
     if (!solutions.length) return;
 
-    // Pareto + policy
     const policy   = State.getPolicy();
     const pareto   = policy === 'pareto' ? paretoFilter(solutions) : solutions;
-
-    // Rank all solutions by policy
-    const ranked = _rankByPolicy([...solutions], policy);
+    const ranked   = _rankByPolicy([...solutions], policy);
     const topRoutes = ranked.slice(0, 3);
 
-    // Determine selection reason for each
     topRoutes.forEach((s, i) => {
       s._rank    = i + 1;
       s._reason  = _getSelectionReason(s, topRoutes, policy, i);
     });
 
-    // Draw and animate all ranked routes (3rd first, then 2nd, then 1st — so 1st is on top)
-    const animDelay = 80; // ms per edge
+    const animDelay = 80;
     let totalDelay = 0;
 
-    // Clear previous tracked routes if this is a fresh manual dispatch
-    // (In this simplified version, we just add to the tracking)
-    
     for (let i = topRoutes.length - 1; i >= 0; i--) {
       const route = topRoutes[i];
       const rank  = route._rank;
       _highlightPath(route.path, rank, route.incident.id(), route);
       _animateRoute(route.path, rank, totalDelay);
       totalDelay += route.path.edges().length * animDelay + 400;
-      
+
       activeRankedRoutes.push({
         path:       route.path,
         rank:       rank,
@@ -229,26 +202,78 @@ window.Routing = (() => {
       });
     }
 
-    // Commit the #1 route assignment
     const selected = topRoutes[0];
     _commitAssignment(selected, policy, pareto);
   }
 
-  // ── Rank solutions by policy ─────────────────────────────────
+  // ── Commit a SPECIFIC center→incident pair (used by modal) ─────
+  // This is the public-facing version that modal.js calls when the
+  // user clicks DISPATCH on a specific center card.
+  function commitSpecific(centerId, incidentNodeId) {
+    const center   = Graph.cy.getElementById(centerId);
+    const incident = Graph.cy.getElementById(incidentNodeId);
+
+    if (!center.length || !incident.length) return;
+    if (State.getCenterUnits(centerId) < 1) return;
+
+    const result = evaluateRoute(center, incident);
+    if (!result) return;
+
+    const policy = State.getPolicy();
+
+    // Evaluate all centers so we can build a proper Pareto set for the log
+    const allSolutions = [];
+    Graph.cy.nodes().filter(n => n.data('node_type') === 'hospital').forEach(c => {
+      const r = evaluateRoute(c, incident);
+      if (r) allSolutions.push(r);
+    });
+    const pareto = paretoFilter(allSolutions);
+
+    // Rank and annotate
+    const ranked = _rankByPolicy([...allSolutions], policy);
+    const forcedRank = ranked.findIndex(s => s.center.id() === centerId) + 1 || 1;
+    result._rank   = forcedRank;
+    result._reason = forcedRank === 1
+      ? `Manually selected & policy-optimal (${policy.toUpperCase()})`
+      : `Manually selected from modal — rank #${forcedRank} by ${policy.toUpperCase()} policy`;
+
+    // Draw routes (show top 3 ranked, with chosen center highlighted)
+    const topRoutes = ranked.slice(0, 3);
+    topRoutes.forEach((s, i) => {
+      s._rank    = i + 1;
+      s._reason  = _getSelectionReason(s, topRoutes, policy, i);
+    });
+
+    // Ensure our forced selection is drawn as rank 1 if it wasn't already
+    const chosenInTop = topRoutes.find(s => s.center.id() === centerId);
+    const drawSet = chosenInTop ? topRoutes : [result, ...topRoutes.slice(0, 2)];
+
+    let totalDelay = 0;
+    for (let i = drawSet.length - 1; i >= 0; i--) {
+      const route = drawSet[i];
+      _highlightPath(route.path, route._rank, route.incident.id(), route);
+      _animateRoute(route.path, route._rank, totalDelay);
+      totalDelay += route.path.edges().length * 80 + 400;
+      activeRankedRoutes.push({
+        path: route.path, rank: route._rank,
+        incidentId: route.incident.id(), policy,
+        centerId: route.center.id(), solution: route,
+      });
+    }
+
+    _commitAssignment(result, policy, pareto);
+  }
+
+  // ── Rank solutions by policy ──────────────────────────────────
   function _rankByPolicy(solutions, policy) {
     switch (policy) {
-      case 'time':
-        return solutions.sort((a,b) => a.time - b.time);
-      case 'cost':
-        return solutions.sort((a,b) => a.cost - b.cost);
-      case 'reliability':
-        return solutions.sort((a,b) => b.reliability - a.reliability);
+      case 'time':        return solutions.sort((a,b) => a.time - b.time);
+      case 'cost':        return solutions.sort((a,b) => a.cost - b.cost);
+      case 'reliability': return solutions.sort((a,b) => b.reliability - a.reliability);
       case 'pareto':
-        // Score by balanced composite
         _computeBalanceScores(solutions);
         return solutions.sort((a,b) => (a._balanceScore||0) - (b._balanceScore||0));
-      default:
-        return solutions.sort((a,b) => a.time - b.time);
+      default:            return solutions.sort((a,b) => a.time - b.time);
     }
   }
 
@@ -275,16 +300,15 @@ window.Routing = (() => {
         default:            return 'Optimal route by selected policy';
       }
     }
-    // 2nd and 3rd choices
-    const label = rankIdx === 1 ? '2nd' : '3rd';
-    const best  = allRoutes[0];
+    const label    = rankIdx === 1 ? '2nd' : '3rd';
+    const best     = allRoutes[0];
     const timeDiff = ((route.time - best.time) / best.time * 100).toFixed(0);
     const costDiff = ((route.cost - best.cost) / (best.cost||1) * 100).toFixed(0);
     return `${label} choice — ${timeDiff > 0 ? '+' : ''}${timeDiff}% time, ${costDiff > 0 ? '+' : ''}${costDiff}% cost vs optimal`;
   }
 
   // ── Route click data storage ──────────────────────────────────
-  const _routeClickData = new Map(); // edge id → route info
+  const _routeClickData = new Map();
 
   function _storeRouteClickData(path, route) {
     path.edges().forEach(e => {
@@ -308,35 +332,34 @@ window.Routing = (() => {
 
   // ── Draw path on graph (ranked) ───────────────────────────────
   const RANK_STYLES = {
-    1: { lineStyle: 'solid',  width: 6, dashPattern: null,    opacity: 1   },
+    1: { lineStyle: 'solid',  width: 6, dashPattern: null,    opacity: 1    },
     2: { lineStyle: 'dashed', width: 4, dashPattern: [12, 6], opacity: 0.85 },
     3: { lineStyle: 'dotted', width: 3, dashPattern: [3, 5],  opacity: 0.7  },
   };
 
   function _highlightPath(path, rank, incidentId, routeData) {
-    const rs = RANK_STYLES[rank] || RANK_STYLES[3];
+    const rs    = RANK_STYLES[rank] || RANK_STYLES[3];
     const color = '#ffffff';
 
-    // Path is [node, edge, node, edge, ...]. We iterate to find edge traversal.
     path.forEach((el, i) => {
       if (el.isEdge()) {
-        const prevNode = path[i-1];
+        const prevNode  = path[i-1];
         const isForward = el.source().id() === prevNode.id();
 
         const style = {
-          'line-color':          color,
-          'width':               rs.width,
-          'opacity':             el.style('opacity') || 0, // preserve during updates
-          'shadow-blur':         rank === 1 ? 14 : 8,
-          'shadow-color':        color,
-          'shadow-opacity':      rank === 1 ? .6 : .3,
-          'shadow-offset-x':     0,
-          'shadow-offset-y':     0,
-          'z-index':             30 - rank,
-          'source-arrow-shape':  isForward ? 'none' : 'triangle',
-          'target-arrow-shape':  isForward ? 'triangle' : 'none',
-          'source-arrow-color':  color,
-          'target-arrow-color':  color
+          'line-color':         color,
+          'width':              rs.width,
+          'opacity':            el.style('opacity') || 0,
+          'shadow-blur':        rank === 1 ? 14 : 8,
+          'shadow-color':       color,
+          'shadow-opacity':     rank === 1 ? .6 : .3,
+          'shadow-offset-x':   0,
+          'shadow-offset-y':   0,
+          'z-index':            30 - rank,
+          'source-arrow-shape': isForward ? 'none' : 'triangle',
+          'target-arrow-shape': isForward ? 'triangle' : 'none',
+          'source-arrow-color': color,
+          'target-arrow-color': color,
         };
         if (rs.dashPattern) {
           style['line-style']        = 'dashed';
@@ -347,15 +370,14 @@ window.Routing = (() => {
       }
     });
 
-    // Mark incident node
     if (rank === 1) {
       const incNode = Graph.cy.getElementById(incidentId);
       if (incNode.length) {
         incNode.style({
-          'border-color':  color,
-          'border-width':  4,
-          'shadow-blur':   20,
-          'shadow-color':  color,
+          'border-color':   color,
+          'border-width':   4,
+          'shadow-blur':    20,
+          'shadow-color':   color,
           'shadow-opacity': .8,
           'shadow-offset-x': 0,
           'shadow-offset-y': 0,
@@ -363,27 +385,20 @@ window.Routing = (() => {
       }
     }
 
-    // Store click data
     if (routeData) _storeRouteClickData(path, routeData);
-
     _updateRouteLegend();
   }
 
   // ── Animate route edge-by-edge ────────────────────────────────
   function _animateRoute(path, rank, startDelay) {
-    const edges = path.edges();
-    const rs    = RANK_STYLES[rank] || RANK_STYLES[3];
-    const delay = 80; // ms per edge
-
-    // Order edges from source (center) → destination (incident)
-    // Path is returned by dijkstra in order, so we iterate forward
+    const rs      = RANK_STYLES[rank] || RANK_STYLES[3];
     const edgeArr = [];
-    edges.forEach(e => edgeArr.push(e));
+    path.edges().forEach(e => edgeArr.push(e));
 
     edgeArr.forEach((edge, i) => {
       setTimeout(() => {
         edge.style({ 'opacity': rs.opacity });
-      }, startDelay + i * delay);
+      }, startDelay + i * 80);
     });
   }
 
@@ -392,7 +407,6 @@ window.Routing = (() => {
     const queue = State.getQueue();
     if (!queue.length) return;
 
-    // Sort by severity (critical first)
     const SEV_ORDER = { critical:1, urgent:2, moderate:3, minor:4 };
     const sorted = queue.map(id => INCIDENTS.find(i => i.node_id === id)).filter(Boolean);
     sorted.sort((a,b) => (SEV_ORDER[a.severity]||9) - (SEV_ORDER[b.severity]||9));
@@ -416,25 +430,21 @@ window.Routing = (() => {
 
       if (!solutions.length) return;
 
-      const pareto   = policy === 'pareto' ? paretoFilter(solutions) : solutions;
-      const ranked   = _rankByPolicy([...solutions], policy);
+      const pareto    = policy === 'pareto' ? paretoFilter(solutions) : solutions;
+      const ranked    = _rankByPolicy([...solutions], policy);
       const topRoutes = ranked.slice(0, 3);
 
       topRoutes.forEach((s, i) => {
         s._rank   = i + 1;
         s._reason = _getSelectionReason(s, topRoutes, policy, i);
-        
+
         activeRankedRoutes.push({
-          path:       s.path,
-          rank:       s._rank,
-          incidentId: s.incident.id(),
-          policy:     policy,
-          centerId:   s.center.id(),
-          solution:   s
+          path: s.path, rank: s._rank,
+          incidentId: s.incident.id(), policy,
+          centerId: s.center.id(), solution: s,
         });
       });
 
-      // Animate all ranked routes for this incident
       const animDelay = 80;
       for (let i = topRoutes.length - 1; i >= 0; i--) {
         const route = topRoutes[i];
@@ -448,7 +458,6 @@ window.Routing = (() => {
       _commitAssignment(selected, policy, pareto);
     });
 
-    // Clear queue after dispatch
     State.clearQueue();
     UI.refreshIncidentList();
     _updateQueueBadge();
@@ -460,15 +469,12 @@ window.Routing = (() => {
     const centerId = selected.center.data('id');
     const incId    = selected.incident.data('id');
 
-    // Decrement center capacity
     State.decrementCenter(centerId);
 
-    // Find and dispatch a vehicle from this center
     const vehicles = State.getAvailableVehiclesAt(centerId);
     const vehicle  = vehicles[0];
     if (vehicle) State.dispatchVehicle(vehicle.vehicle_id);
 
-    // Record in state
     const assignment = {
       assignId:   `DISP-${Date.now()}-${Math.random().toString(36).slice(2,5)}`,
       incidentId:  incId,
@@ -487,54 +493,46 @@ window.Routing = (() => {
     };
     State.addAssignment(assignment);
 
-    // Update UI
     UI.refreshDispatchLog();
     UI.refreshVehicleList();
     UI.updateIncidentStatus(incId, 'dispatched');
   }
 
-  // ── Dynamic Update for Life Simulation ─────────────────────────
+  // ── Dynamic update for live simulation ─────────────────────────
   function updateActiveRoutes(hour) {
     if (!activeRankedRoutes.length) return;
 
     activeRankedRoutes.forEach(r => {
-      // 1. Recalculate optimal path for this center -> incident pair
-      const newSol = evaluateRoute(Graph.cy.getElementById(r.centerId), Graph.cy.getElementById(r.incidentId));
+      const newSol = evaluateRoute(
+        Graph.cy.getElementById(r.centerId),
+        Graph.cy.getElementById(r.incidentId)
+      );
       if (!newSol) return;
 
-      // 2. If path changed, update visual representation
       const oldPathIds = r.path.map(el => el.id());
       const newPathIds = newSol.path.map(el => el.id());
-      
-      const pathsMatch = oldPathIds.length === newPathIds.length && 
+      const pathsMatch = oldPathIds.length === newPathIds.length &&
                          oldPathIds.every((id, idx) => id === newPathIds[idx]);
 
       if (!pathsMatch) {
-        // Clear old path styles
         r.path.forEach(el => {
           if (el.isEdge()) {
             el.removeClass('route-rank');
             el.removeClass(`route-rank-${r.rank}`);
-            el.removeStyle(); // restore congestion color
+            el.removeStyle();
           }
         });
-
-        // Update tracking object
         r.path     = newSol.path;
         r.solution = newSol;
         r.solution._rank   = r.rank;
         r.solution._reason = _getSelectionReason(newSol, [newSol], r.policy, r.rank-1);
-
-        // Apply new path styles
         _highlightPath(r.path, r.rank, r.incidentId, r.solution);
       } else {
-        // Path didn't change, but travel time might have
         r.solution.time = newSol.time;
         r.solution.cost = newSol.cost;
         _storeRouteClickData(r.path, r.solution);
       }
 
-      // 3. Update assignment in State if rank 1
       if (r.rank === 1) {
         const assignments = State.getAssignments();
         const found = assignments.find(a => a.incidentId === r.incidentId);
@@ -563,7 +561,7 @@ window.Routing = (() => {
 
     legend.style.display = 'block';
     items.innerHTML = assignments.map(a => {
-      const inc = a.incident;
+      const inc   = a.incident;
       const label = inc ? `${a.incidentId.slice(-4)} → ${a.centerId}` : a.assignId;
       const sev   = inc?.severity || '';
       return `
@@ -577,22 +575,17 @@ window.Routing = (() => {
 
   // ── Reset everything ──────────────────────────────────────────
   function clearAll() {
-    // Remove path styles from all edges
     Graph.cy.edges().removeStyle();
     Graph.cy.edges().removeClass('route-rank route-rank-1 route-rank-2 route-rank-3');
-    // Remove node overrides
     Graph.cy.nodes().removeStyle();
-    // Re-apply base congestion colors
     Graph.reapplyBaseStyles();
 
     State.clearAssignments();
     State.clearQueue();
 
     activeRankedRoutes = [];
-    // Clear route click data
     _routeClickData.clear();
 
-    // Remove route info popup if present
     const popup = document.getElementById('route-info-popup');
     if (popup) popup.remove();
 
@@ -604,7 +597,7 @@ window.Routing = (() => {
   }
 
   function _updateQueueBadge() {
-    const n = State.getQueue().length;
+    const n     = State.getQueue().length;
     const badge = document.getElementById('dq-count');
     const btn   = document.getElementById('dq-dispatch-btn');
     const hs    = document.getElementById('hs-queued');
@@ -626,6 +619,7 @@ window.Routing = (() => {
     buildEdgeStats,
     getRouteClickData,
     updateActiveRoutes,
+    commitSpecific,       // ← NEW: used by modal dispatchFromModal
   };
 
 })();
