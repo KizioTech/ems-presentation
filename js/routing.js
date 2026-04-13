@@ -358,6 +358,7 @@ window.Routing = (() => {
     path.forEach((el, i) => {
       if (el.isEdge()) {
         const prevNode  = path[i-1];
+        // Determine which direction the route traverses this edge
         const isForward = el.source().id() === prevNode.id();
 
         const style = {
@@ -370,6 +371,7 @@ window.Routing = (() => {
           'shadow-offset-x':   0,
           'shadow-offset-y':   0,
           'z-index':            30 - rank,
+          // Show only the arrow pointing in the direction of travel
           'source-arrow-shape': isForward ? 'none' : 'triangle',
           'target-arrow-shape': isForward ? 'triangle' : 'none',
           'source-arrow-color': color,

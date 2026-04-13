@@ -139,8 +139,16 @@ window.Graph = (() => {
       });
     });
 
+    // Deduplicate reciprocal edges: for each A↔B pair, keep only one
+    // and show arrows on both ends of it. Routing uses directed:false
+    // so removing visual duplicates does not affect shortest-path results.
+    const seenPairs = new Set();
     CY_EDGES.forEach(e => {
       const d    = e.data;
+      const key  = [d.source, d.target].sort().join('_');
+      if (seenPairs.has(key)) return;   // skip reverse duplicate
+      seenPairs.add(key);
+
       const mult = getMultiplierForHour(0, d.is_market_road, d.is_highway || false);
       const col  = multToColor(mult);
       const crit = getCriticalityForHour(d.criticality||0, 0, mult);
@@ -213,11 +221,14 @@ window.Graph = (() => {
           'shadow-opacity':.5,'shadow-offset-x':0,'shadow-offset-y':0,
         }
       },
-      // Edges base
+      // Edges base — bidirectional arrows (both source + target)
       { selector:'edge', style:{
           'width':'data(edgeW)', 'line-color':'data(lineColor)',
+          'source-arrow-color':'data(arrowColor)',
           'target-arrow-color':'data(arrowColor)',
-          'target-arrow-shape':'triangle', 'arrow-scale':1.1,
+          'source-arrow-shape':'triangle',
+          'target-arrow-shape':'triangle',
+          'arrow-scale':0.9,
           'curve-style':'bezier', 'opacity':.7,
         }
       },
