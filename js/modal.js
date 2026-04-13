@@ -57,6 +57,17 @@ window.Modal = (() => {
                      d.road_type === 'primary'  ? `Primary · ${d.lanes}-lane` :
                                                   `Residential · ${d.lanes}-lane`;
 
+    const phi        = d.phi_braess || 0.0;
+    const vulnClass  = d.vulnerability_class || 'standard';
+    const vulnColor  = vulnClass === 'highway' ? '#1a6faf'
+                     : vulnClass === 'feeder'  ? '#ff7f0e'
+                     : 'var(--text-lo)';
+    const braessNote = vulnClass === 'feeder'
+      ? `Braess penalty active — inflates f₂ by ×${(1 + phi).toFixed(3)}`
+      : vulnClass === 'highway'
+      ? 'Highway: constant τ, no congestion multiplier applied'
+      : 'Standard edge — no Braess penalty';
+
     const html = `
       <div class="modal-title">Edge Analysis</div>
       <div class="modal-subtitle">
@@ -96,6 +107,23 @@ window.Modal = (() => {
               <span>Failure Rate γ</span>
               <span>${dispGamma}</span>
             </div>
+            <div class="modal-row">
+              <span>Braess Class</span>
+              <span style="color:${vulnColor};font-weight:700;text-transform:uppercase">
+                ${vulnClass}
+              </span>
+            </div>
+            <div class="modal-row">
+              <span>φ (Braess penalty)</span>
+              <span style="color:${phi > 0 ? '#ff7f0e' : 'var(--text-lo)'}">
+                ${phi.toFixed(3)} &nbsp; (1+φ = ${(1+phi).toFixed(3)})
+              </span>
+            </div>
+            <div class="modal-row" style="border-bottom:none">
+              <span style="color:var(--text-lo);font-size:.7rem;font-style:italic">
+                ${braessNote}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -122,6 +150,12 @@ window.Modal = (() => {
             ${_pctBar('Cost',          pct.cost,        'Higher = more expensive', 'var(--amber)')}
             ${_pctBar('Criticality ρ', pct.criticality, 'Higher = more critical', 'var(--red)')}
             ${_pctBar('Failure Rate γ',pct.reliability, 'Higher = less reliable', 'var(--urgent)')}
+            ${phi > 0 ? _pctBar(
+                'Braess φ penalty',
+                Math.round(phi * 100),   // φ expressed as % of max (0.70)
+                `Feeder exposure — inflates reliability penalty by ×${(1+phi).toFixed(2)}`,
+                '#ff7f0e'
+              ) : ''}
           </div>
         </div>
       </div>

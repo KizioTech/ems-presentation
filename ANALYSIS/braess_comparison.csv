@@ -1,0 +1,16 @@
+incident_id,severity,f2_with_phi,f2_baseline,f2_increase,uses_feeder
+INC_006,critical,26.9019,19.3341,7.568,True
+INC_004,critical,2.6144,2.6144,0.0,False
+INC_001,critical,3.3907,2.1219,1.269,True
+INC_002,urgent,1.904,1.904,0.0,False
+INC_012,urgent,0.0,0.0,0.0,False
+INC_015,urgent,1.3154,1.3154,0.0,False
+INC_008,urgent,18.2812,11.25,7.031,True
+INC_007,urgent,1.3658,0.9954,0.37,True
+INC_011,moderate,0.6843,0.6843,0.0,False
+INC_014,moderate,8.6645,7.1625,1.502,True
+INC_009,moderate,0.0,0.0,0.0,False
+INC_003,moderate,4.5332,3.5666,0.967,True
+INC_005,moderate,7.2356,7.2356,0.0,False
+INC_013,moderate,0.1986,0.1275,0.071,True
+INC_010,minor,0.0,0.0,0.0,False

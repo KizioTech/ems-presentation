@@ -45,7 +45,11 @@ window.Graph = (() => {
   }
 
   // ── Time → congestion multiplier ───────────────────────────────
-  function getMultiplierForHour(hour, isMarketRoad) {
+  function getMultiplierForHour(hour, isMarketRoad, isHighway = false) {
+    // Highway edges: Eq. (3.2) — constant travel time regardless of time period.
+    // Traffic volumes in secondary African cities rarely approach highway saturation.
+    if (isHighway) return 1.0;
+
     const profile = TIME_PROFILES.find(p =>
       hour >= parseFloat(p.start_hour) && hour < parseFloat(p.end_hour)
     ) || TIME_PROFILES[TIME_PROFILES.length-1];
@@ -137,7 +141,7 @@ window.Graph = (() => {
 
     CY_EDGES.forEach(e => {
       const d    = e.data;
-      const mult = getMultiplierForHour(0, d.is_market_road);
+      const mult = getMultiplierForHour(0, d.is_market_road, d.is_highway || false);
       const col  = multToColor(mult);
       const crit = getCriticalityForHour(d.criticality||0, 0, mult);
       const gamma= getReliabilityForHour(d.gamma||0, 0, mult);
@@ -152,6 +156,10 @@ window.Graph = (() => {
           roadType:    d.road_type,
           dynamicCrit: crit,
           dynamicGamma:gamma,
+          vulnerability_class: d.vulnerability_class || 'standard',
+          phi_braess:  d.phi_braess || 0.0,
+          is_highway:  d.is_highway || false,
+          is_feeder:   d.is_feeder  || false,
         },
       });
     });
@@ -223,6 +231,25 @@ window.Graph = (() => {
           'shadow-offset-x':0,'shadow-offset-y':0,'opacity':1,
         }
       },
+      // ── Braess Edge Classification Styles ──────────────────────────
+      { selector: 'edge[vulnerability_class="highway"]', style: {
+          'shadow-blur':    12,
+          'shadow-color':   '#1a6faf',
+          'shadow-opacity': 0.55,
+          'shadow-offset-x': 0,
+          'shadow-offset-y': 0,
+          'opacity': 1,
+        }
+      },
+      { selector: 'edge[vulnerability_class="feeder"]', style: {
+          'shadow-blur':    6,
+          'shadow-color':   '#ff7f0e',
+          'shadow-opacity': 0.40,
+          'shadow-offset-x': 0,
+          'shadow-offset-y': 0,
+          'opacity': 0.9,
+        }
+      },
       { selector:'edge.hovered', style:{
           'opacity':1,'shadow-blur':14,'shadow-color':'data(lineColor)',
           'shadow-opacity':.9,'shadow-offset-x':0,'shadow-offset-y':0,
@@ -280,7 +307,7 @@ window.Graph = (() => {
     if (!cy) return;
     cy.edges().not('.severed').forEach(edge => {
       const d    = edge.data();
-      const mult = getMultiplierForHour(hour, d.is_market_road);
+      const mult = getMultiplierForHour(hour, d.is_market_road, d.is_highway || false);
       const col  = multToColor(mult);
       const crit = getCriticalityForHour(d.criticality || 0, hour, mult);
       const gamma= getReliabilityForHour(d.gamma || 0, hour, mult);

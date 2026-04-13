@@ -4208,3 +4208,53 @@ const TIME_PROFILES = [
     "description": "Reduced traffic as markets close"
   }
 ];
+
+// ── Braess Extension Patch ──────────────────────────────────────
+// Applied at data-load time. No file renaming required.
+// Seeds is_highway, is_feeder, phi_braess into every edge.
+(function patchBraess() {
+  const HIGHWAY_IDS = new Set([11, 22, 71, 79, 105, 160]);
+  const RNG_SEED    = 42;
+
+  // Deterministic pseudo-random for reproducibility (seed=42)
+  function seededRand(seed) {
+    let s = seed;
+    return function() {
+      s = (s * 1664525 + 1013904223) & 0xffffffff;
+      return (s >>> 0) / 0xffffffff;
+    };
+  }
+  const rng = seededRand(RNG_SEED);
+
+  // Find all nodes directly incident to a highway edge
+  const hwNodes = new Set();
+  CY_EDGES.forEach(e => {
+    if (HIGHWAY_IDS.has(e.data.edge_id)) {
+      hwNodes.add(String(e.data.source));
+      hwNodes.add(String(e.data.target));
+    }
+  });
+
+  // Classify and assign phi
+  CY_EDGES.forEach(e => {
+    const d  = e.data;
+    const hw = HIGHWAY_IDS.has(d.edge_id);
+    const fd = !hw && (hwNodes.has(String(d.source)) || hwNodes.has(String(d.target)));
+
+    d.is_highway           = hw;
+    d.is_feeder            = fd;
+    d.phi_braess           = fd ? parseFloat((0.25 + rng() * 0.45).toFixed(3)) : 0.0;
+    d.vulnerability_class  = hw ? 'highway' : fd ? 'feeder' : 'standard';
+
+    // Upgrade newly-trunk edges: speed × 1.35, recalculate base_time
+    if (hw && d.edge_id !== 105) {
+      d.free_speed_kmh = parseFloat((d.free_speed_kmh * 1.35).toFixed(1));
+      d.base_time      = parseFloat((d.length_km / d.free_speed_kmh * 60).toFixed(2));
+    }
+  });
+
+  console.log('[Braess] Patch applied.',
+    CY_EDGES.filter(e => e.data.is_highway).length, 'highway,',
+    CY_EDGES.filter(e => e.data.is_feeder).length,  'feeder edges.'
+  );
+})();

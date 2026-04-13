@@ -1,0 +1,6 @@
+vehicle_id,base_node,available_from,status,priority_rank,crew_size,fuel_capacity_L,avg_fuel_consumption_L_per_km
+AMB_01,1,0.0,available,1,2,60,0.12
+AMB_02,2,0.0,available,2,2,60,0.12
+AMB_03,3,0.0,available,3,2,60,0.12
+AMB_04,1,0.0,available,4,2,60,0.12
+AMB_05,2,0.0,available,5,2,60,0.12

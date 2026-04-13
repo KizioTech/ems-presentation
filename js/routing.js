@@ -78,23 +78,37 @@ window.Routing = (() => {
 
     if (!path || path.length === 0 || !isFinite(distTime)) return null;
 
-    let totalCost = 0, totalGamma = 0, edgeCount = 0;
+    let totalCost = 0, totalVstar = 0, edgeCount = 0;
+
     path.edges().forEach(e => {
-      const d = e.data();
-      totalCost  += d.total_cost    || 0;
-      totalGamma += d.dynamicGamma ?? (d.gamma || 0);
+      const d     = e.data();
+      const tau   = (d.base_time || 1) * (d.currentMult || 1);  // τ_ij(t)
+      const tau0  = d.base_time || tau;                          // τ⁰_ij
+      const gamma = d.dynamicGamma ?? (d.gamma || 0.4);          // γ_ij
+      const phi   = d.phi_braess   || 0.0;                       // φ_ij
+
+      // v*_ij(t) = τ·(τ/τ⁰)²·γ·(1+φ)   — Equation (3.4) from thesis
+      const vStar = tau0 > 0
+        ? tau * Math.pow(tau / tau0, 2) * gamma * (1 + phi)
+        : 0;
+
+      totalCost  += d.total_cost || 0;
+      totalVstar += vStar;
       edgeCount++;
     });
 
-    const avgGamma   = edgeCount > 0 ? totalGamma / edgeCount : 0;
+    // Reliability is now the inverse of mean v* (higher v* = less reliable)
+    // Normalise by number of edges so short and long paths are comparable
+    const avgVstar    = edgeCount > 0 ? totalVstar / edgeCount : 0;
+    const reliability = 1 / (1 + avgVstar);  // maps [0,∞) → (0,1], higher = more reliable
     const balance    = 1 / Math.max(1, State.getCenterUnits(center.data('id')));
-    const reliability= 1 - avgGamma;
 
     return {
       center, incident, path,
       time:        distTime,
       cost:        totalCost,
       reliability: reliability,
+      totalVstar:  totalVstar,
       balance:     balance,
       edgeCount,
     };

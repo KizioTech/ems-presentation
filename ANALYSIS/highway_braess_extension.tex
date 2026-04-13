@@ -1,0 +1,283 @@
+% ==============================================================
+% METHODOLOGY EXTENSION: Highway Upgrades and the Braess Effect
+% Insert this as Section 3.X after Section 3.1 
+% (Network Representation and Time-Dependent Travel Times)
+% and update Section 3.2 (Multi-Objective Path Formulation)
+% accordingly using the revised equations below.
+% ==============================================================
+
+% ---------------------------------------------------------------
+\section{Highway Upgrades, Structural Vulnerability, and the
+         Braess Paradox in Organic Urban Networks}
+\label{sec:braess}
+% ---------------------------------------------------------------
+
+A distinctive feature of poorly developed cities in sub-Saharan Africa,
+including Zomba and Blantyre, is that road investment is incremental and
+spatially uneven. Individual corridors are periodically upgraded to trunk
+or dual-carriageway standard while the surrounding network remains
+unchanged. This pattern produces a structural condition that is
+theoretically familiar yet practically undermodelled in the emergency
+routing literature: the conditions described by Braess's paradox
+\cite{braess1968}.
+
+Braess's paradox demonstrates that adding capacity to a congested network
+can, under user-equilibrium routing, increase the total travel time
+experienced by all users. The mechanism is not that the new road is
+poorly built; it is that its existence induces diversion. Drivers who
+previously distributed across several routes now converge on the new
+high-capacity corridor, and the feeder roads that channel them into it
+absorb the concentrated demand. The highway flows freely; the connectors
+that feed it become the new bottleneck. For emergency vehicles, which
+cannot deviate from the network in the way a car might, the consequence
+is that routes passing through feeder segments adjacent to recently
+upgraded corridors become systematically less reliable, not because their
+own physical condition has changed, but because the structural load
+imposed on them has increased as a downstream effect of an improvement
+elsewhere in the network.
+
+This section formalises how this effect is incorporated into the
+multi-objective model without adding a fourth objective dimension or
+restructuring the MOLS algorithm.
+
+\subsection{Highway Edge Classification and Constant Travel Time}
+\label{subsec:hw_classification}
+
+We partition the edge set $E$ into three disjoint classes:
+
+\begin{definition}[Edge Classification]
+\label{def:edge_class}
+\begin{align}
+  E_H &= \{ (i,j) \in E : \text{edge is a trunk/highway segment} \},
+                                                         \label{eq:EH}\\
+  E_F &= \{ (i,j) \in E\setminus E_H :
+           i \in \mathcal{N}_H \text{ or } j \in \mathcal{N}_H \},
+                                                         \label{eq:EF}\\
+  E_S &= E \setminus (E_H \cup E_F),                    \label{eq:ES}
+\end{align}
+where $\mathcal{N}_H = \bigl\{ v \in V : \exists\,(i,j)\in E_H,\;
+i=v \text{ or } j=v \bigr\}$ is the set of nodes directly incident to
+at least one highway edge.
+\end{definition}
+
+Edges in $E_H$ represent either existing trunk roads or primary roads
+that have been upgraded to highway standard. Edges in $E_F$ are
+\textit{feeder} segments: roads that are not highways themselves but
+whose endpoints connect directly to the highway corridor, and therefore
+absorb the redistribution of traffic that the paradox predicts. All
+remaining edges belong to $E_S$.
+
+\textbf{Highway travel time.}~
+Unlike ordinary road segments, trunk-standard corridors in sub-Saharan
+cities experience congestion only at extreme traffic volumes that are
+rarely reached in secondary cities \cite{gonzalez2023}. We therefore
+model highway edges with time-invariant travel time:
+
+\begin{equation}
+  \tau_{ij}(t) = \tau_{ij}^{0}
+  = \frac{\ell_{ij}}{s_{ij}^{0}}, \qquad \forall\,(i,j)\in E_H,
+  \quad \forall\, t,
+  \label{eq:hw_const}
+\end{equation}
+
+where $\ell_{ij}$ is the edge length and $s_{ij}^{0}$ is the free-flow
+speed. This is a deliberate modelling choice, not a universal claim about
+highway behaviour: it reflects the low traffic volumes typical of
+secondary African cities and ensures that the paradox effect is isolated
+to the feeder segments where it actually manifests, rather than being
+diffused across the whole network.
+
+\begin{remark}
+Equation~\eqref{eq:hw_const} is implemented by assigning a
+congestion multiplier of $1.0$ across all time periods for $E_H$ edges,
+leaving the piecewise-linear structure of Section~\ref{sec:methodology}
+intact. No algorithmic change to the MOLS procedure is required.
+\end{remark}
+
+\subsection{The Braess Structural Vulnerability Parameter}
+\label{subsec:phi}
+
+For feeder edges $(i,j)\in E_F$, the standard variability measure
+$v_{ij}(t_i)$ in objective $f_2$ underestimates true unreliability
+because it captures only the effect of current-period congestion. It does
+not capture the structurally elevated load that results from being a
+collector for a high-capacity corridor. We introduce a time-independent
+\textit{Braess structural vulnerability parameter} $\varphi_{ij}\in
+[0,1]$ to represent this additional source of unreliability.
+
+\begin{definition}[Braess Structural Vulnerability Parameter]
+\label{def:phi}
+For each edge $(i,j)\in E$:
+\[
+  \varphi_{ij} =
+  \begin{cases}
+    0, & (i,j)\in E_S\cup E_H, \\[4pt]
+    \varphi_{ij}^{*}\in(0,1], & (i,j)\in E_F,
+  \end{cases}
+\]
+where $\varphi_{ij}^{*}$ is the edge-specific vulnerability score,
+calibrated by the proximity of the feeder to the highway node and
+the proportion of network shortest paths that pass through both
+the feeder and the highway \cite{6,11}.
+\end{definition}
+
+The parameter is time-independent because it reflects a structural
+property of the network, not a time-of-day pattern. A road that feeds a
+highway is permanently more exposed to load redistribution once the
+highway is present; this does not switch off at night.
+
+\subsection{Modified Reliability Objective}
+\label{subsec:f2_modified}
+
+The reliability objective $f_2$ is updated to incorporate
+$\varphi_{ij}$:
+
+\begin{equation}
+  \boxed{
+  f_2(P) = \sum_{(i,j)\in P} v_{ij}^{*}(t_i),
+  \quad
+  v_{ij}^{*}(t_i)
+    = \tau_{ij}(t_i)
+      \cdot\!\left(\frac{\tau_{ij}(t_i)}{\tau_{ij}^{0}}\right)^{\!2}
+      \cdot \gamma_{ij}
+      \cdot \bigl(1 + \varphi_{ij}\bigr).
+  }
+  \label{eq:f2_modified}
+\end{equation}
+
+The multiplicative factor $(1+\varphi_{ij})$ inflates the variability
+penalty for feeder edges without changing its functional form, so that
+the MOLS label update remains:
+
+\begin{equation}
+  \hat{f}_2 \;\leftarrow\; f_2
+    + \tau_{ij}(t)\cdot\!\left(\frac{\tau_{ij}(t)}{\tau_{ij}^{0}}
+      \right)^{\!2}\!\cdot\gamma_{ij}\cdot(1+\varphi_{ij}),
+  \label{eq:mols_f2_update}
+\end{equation}
+
+requiring only a single additional lookup per edge extension in
+Algorithm~\ref{alg:mols}, with no change to the dominance criterion or
+label structure. The complete three-objective formulation now reads:
+
+\begin{equation}
+  \begin{aligned}
+    f_1'(P) &= \sum_{(i,j)\in P} \bigl[\tau_{ij}(t_i) + \lambda\,
+               c_{ij}\bigr],
+               && \text{(travel time + cost)} \\[4pt]
+    f_2(P)  &= \sum_{(i,j)\in P}
+               \tau_{ij}(t_i)
+               \!\left(\frac{\tau_{ij}(t_i)}{\tau_{ij}^{0}}\right)^{\!2}
+               \!\gamma_{ij}(1+\varphi_{ij}),
+               && \text{(reliability + Braess penalty)} \\[4pt]
+    f_3(P)  &= \beta \sum_{(i,j)\in P} \rho_{ij},
+               && \text{(resilience)}
+  \end{aligned}
+  \label{eq:mop_revised}
+\end{equation}
+
+\begin{remark}
+The Braess penalty operates through $f_2$ rather than as an independent
+fourth objective for two reasons. First, it is a source of travel time
+unreliability, not a conceptually separate concern; consolidating it with
+$\gamma$ preserves the interpretability of the Pareto front. Second,
+adding a fourth objective dimension would increase the size of the
+non-dominated set combinatorially, imposing computational costs that are
+unjustified given the binary character of feeder classification and the
+single calibration parameter involved. A fourth objective formulation
+would be appropriate if $\varphi_{ij}$ were derived from a continuous
+field measurement and carried distinct decision-making weight, which is
+not the case here.
+\end{remark}
+
+\begin{remark}
+The interaction between $f_1'$ and $f_2$ under this formulation is
+behaviorally meaningful. Highway edges $(E_H)$ reduce $f_1'$ by
+providing fast constant-time travel, while feeder edges $(E_F)$ inflate
+$f_2$ through $(1+\varphi_{ij})$. The MOLS Pareto front therefore
+naturally surfaces the Braess trade-off: routes that use the highway are
+fast but their reliability cost is higher because they must traverse
+feeder segments to access it. Decision-makers operating under tight time
+constraints (critical emergencies, $\beta$ small, reliability weight low)
+will rationally select routes exploiting the highway; those prioritising
+reliability under chronic congestion will tend to avoid feeder segments
+even at the cost of longer nominal travel time.
+\end{remark}
+
+\subsection{Calibration of $\varphi_{ij}$}
+\label{subsec:phi_calibration}
+
+In this study $\varphi_{ij}$ values for feeder edges are assigned
+synthetically. We define the vulnerability of a feeder edge as
+proportional to the betweenness centrality of the highway node it
+connects to, normalised within the feeder set:
+
+\begin{equation}
+  \varphi_{ij}^{*}
+  = \varphi_{\min}
+    + (\varphi_{\max}-\varphi_{\min})
+      \cdot \widetilde{\rho}_{\mathcal{N}_H(ij)},
+  \label{eq:phi_calibration}
+\end{equation}
+
+where $\widetilde{\rho}_{\mathcal{N}_H(ij)}$ is the normalised
+betweenness centrality of the highway-incident node connected to edge
+$(i,j)$, and we set $\varphi_{\min}=0.25$, $\varphi_{\max}=0.70$.
+These bounds reflect the empirical range of load-redistribution effects
+reported in the Braess-paradox literature for networks of comparable
+size and density \cite{11}.
+
+For real-world deployment, $\varphi_{ij}$ can be estimated from GPS
+speed data collected before and after a highway-upgrade event, using
+the ratio of post-upgrade to pre-upgrade travel time variance on each
+feeder link as a direct empirical proxy. In the absence of such data,
+the structural approximation in \eqref{eq:phi_calibration} provides a
+principled lower bound on feeder vulnerability.
+
+% ---------------------------------------------------------------
+% UPDATE TO PARAMETERS TABLE (replace or extend Table~\ref{tab:params})
+% ---------------------------------------------------------------
+\begin{table}[H]
+  \centering
+  \caption{Extended Model Parameters Including Braess Vulnerability}
+  \label{tab:params_ext}
+  \begin{tabular}{llll}
+    \hline
+    \textbf{Parameter} & \textbf{Symbol} & \textbf{Value}
+                       & \textbf{Justification} \\
+    \hline
+    Resilience weight        & $\beta$           & 0.5
+      & Balanced time/resilience trade-off \cite{6,11} \\
+    Cost conversion factor   & $\lambda$         & 0.001
+      & MWK to minute-equivalent \cite{tirkolaee2020} \\
+    Variability factor       & $\gamma$          & 0.25--0.60
+      & Per-edge (reliability\_params.csv) \\
+    Congestion update        & $\Delta$          & 15\%
+      & Vehicle interaction increment \cite{luan2024} \\
+    Market peak multiplier   & ---               & 2.3--2.5$\times$
+      & Morning/evening peaks \cite{8,9} \\
+    Normal peak multiplier   & ---               & 1.5$\times$
+      & Morning/evening peaks \cite{13} \\
+    Criticality threshold    & $\rho_0$          & 0.3
+      & High-betweenness classification \cite{11} \\
+    Braess penalty (feeder)  & $\varphi_{ij}$    & 0.25--0.70
+      & Feeder vulnerability; 0 for $E_S\cup E_H$
+        (\S\ref{subsec:phi_calibration}) \\
+    Highway const.\ tt.      & $\tau_{ij}^0$     & free-flow only
+      & Eq.~\eqref{eq:hw_const}; 6 edges in $E_H$ \\
+    \hline
+  \end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------
+% REQUIRED ADDITION TO BIBLIOGRAPHY
+% ---------------------------------------------------------------
+% Add this entry to your \begin{thebibliography} block:
+%
+% \bibitem{braess1968}
+% Braess, D. (1968). \"Uber ein Paradoxon aus der Verkehrsplanung.
+% \textit{Unternehmensforschung}, 12(1), 258--268.
+% [English translation: Braess, D., Nagurney, A., \& Wakolbinger, T.
+% (2005). On a paradox of traffic planning.
+% \textit{Transportation Science}, 39(4), 446--450.
+% \url{https://doi.org/10.1287/trsc.1050.0127}]

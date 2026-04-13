@@ -1,0 +1,16 @@
+incident_id,node_id,call_time_hours,call_time_formatted,severity,priority,service_time_min,description
+INC_002,23,0.13,00:08,urgent,2,14.1,Urgent emergency at node 23
+INC_011,12,6.08,06:05,moderate,3,11.9,Moderate emergency at node 12
+INC_014,21,7.05,07:03,moderate,3,13.8,Moderate emergency at node 21
+INC_012,23,7.77,07:46,urgent,2,18.9,Urgent emergency at node 23
+INC_009,15,9.37,09:22,moderate,3,8.6,Moderate emergency at node 15
+INC_015,19,10.62,10:37,urgent,2,14.6,Urgent emergency at node 19
+INC_003,34,10.8,10:48,moderate,3,9.1,Moderate emergency at node 34
+INC_010,19,11.02,11:01,minor,4,8.1,Minor emergency at node 19
+INC_008,15,16.12,16:07,urgent,2,14.6,Urgent emergency at node 15
+INC_007,36,16.42,16:25,urgent,2,15.9,Urgent emergency at node 36
+INC_005,2,17.35,17:21,moderate,3,13.3,Moderate emergency at node 2
+INC_006,6,17.98,17:59,critical,1,27.2,Critical emergency at node 6
+INC_013,29,18.62,18:37,moderate,3,12.8,Moderate emergency at node 29
+INC_004,37,21.17,21:10,critical,1,16.0,Critical emergency at node 37
+INC_001,26,23.2,23:12,critical,1,17.1,Critical emergency at node 26

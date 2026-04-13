@@ -2225,3 +2225,40 @@ body {
 .driver-popover-arrow {
   border-color: var(--border2) !important;
 }
+
+/* ── Braess Edge Classification Legend items ─────────────────── */
+.l-line.highway {
+  background: #1a6faf;
+  height: 4px;
+  box-shadow: 0 0 6px rgba(26, 111, 175, 0.6);
+}
+.l-line.feeder {
+  background: #ff7f0e;
+  height: 3px;
+  box-shadow: 0 0 4px rgba(255, 127, 14, 0.4);
+}
+
+/* Braess mode indicator in resilience panel */
+.res-mode-indicator.phi-mode {
+  color: #ff7f0e;
+}
+
+/* Phi percentile bar fill (orange) */
+.pct-fill.phi {
+  background: #ff7f0e;
+}
+
+/* Vulnerability class badge in modal */
+.vuln-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.vuln-badge.highway  { background: rgba(26, 111, 175, 0.15); border: 1px solid #1a6faf; color: #1a6faf; }
+.vuln-badge.feeder   { background: rgba(255, 127, 14, 0.15); border: 1px solid #ff7f0e; color: #ff7f0e; }
+.vuln-badge.standard { background: rgba(104,152,184,0.10);   border: 1px solid var(--border2); color: var(--text-lo); }

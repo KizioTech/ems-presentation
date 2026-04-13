@@ -1,0 +1,4 @@
+vulnerability_class,mean_tau,mean_v_star,mean_rho,count
+feeder,6.613,21.764,0.137,71
+highway,2.037,0.549,0.115,6
+standard,4.281,5.741,0.091,123

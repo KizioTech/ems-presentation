@@ -1,0 +1,28 @@
+{
+  "generated_at": "2026-02-10T07:13:56.142631",
+  "description": "Synthetic data for emergency vehicle routing simulation - Zomba, Malawi",
+  "context": "Urban network with congestion and poor infrastructure",
+  "methodology": "Multi-objective optimization with time-dependent travel times",
+  "parameters": {
+    "n_nodes": 40,
+    "n_vehicles": 5,
+    "n_incidents": 15,
+    "network_type": "directed_graph",
+    "objectives": [
+      "travel_time",
+      "reliability",
+      "operational_cost",
+      "resilience"
+    ]
+  },
+  "files": [
+    "nodes",
+    "edges",
+    "time_profiles",
+    "vehicles",
+    "incidents",
+    "operational_costs",
+    "reliability_params",
+    "time_dependent_travel"
+  ]
+}

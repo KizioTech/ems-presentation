@@ -17,7 +17,7 @@ window.Resilience = (() => {
 
   // ── State ──────────────────────────────────────────────────────
   let active       = false;
-  let mode         = 'rho';   // 'rho' | 'gamma'
+  let mode         = 'rho';   // 'rho' | 'gamma' | 'phi'
   let threshold    = 0.30;
   let removedEdges = [];      // [{ edgeId, data }]
 
@@ -125,18 +125,28 @@ window.Resilience = (() => {
     if (active) updateCandidates();
   }
 
-  // ── Mode switch (ρ / γ) ────────────────────────────────────────
+  // ── Mode switch (ρ / γ / φ) ────────────────────────────────────────
   function setMode(m) {
     mode = m;
     $('mode-rho').classList.toggle('active',   m === 'rho');
     $('mode-gamma').classList.toggle('active', m === 'gamma');
-    $('res-mode-label').textContent = m === 'rho' ? 'ρ CRITICALITY' : 'γ RELIABILITY';
+    $('mode-phi').classList.toggle('active',   m === 'phi');
 
-    // Adjust slider max for gamma (practical max ≈ 0.6)
+    const labels = {
+      rho:   'ρ CRITICALITY',
+      gamma: 'γ RELIABILITY',
+      phi:   'φ BRAESS VULNERABILITY',
+    };
+    $('res-mode-label').textContent = labels[m];
+
+    // Adjust slider max for gamma (practical max ≈ 0.6) and phi (0.70)
     const slider = $('rho-slider');
     if (m === 'gamma') {
       slider.max = '0.6';
-      if (threshold > 0.6) { threshold = 0.3; $('threshold-input').value = '0.30'; }
+      if (threshold > 0.6) { threshold = 0.25; $('threshold-input').value = '0.25'; }
+    } else if (m === 'phi') {
+      slider.max = '0.70';
+      if (threshold > 0.70) { threshold = 0.25; $('threshold-input').value = '0.25'; }
     } else {
       slider.max = '1';
     }
@@ -151,7 +161,11 @@ window.Resilience = (() => {
     let count = 0;
     Graph.cy.edges().not('.severed').forEach(edge => {
       const d   = edge.data();
-      const val = mode === 'rho' ? (d.dynamicCrit ?? (d.criticality || 0)) : (d.dynamicGamma ?? (d.gamma || 0));
+      let val;
+      if      (mode === 'rho')   val = d.dynamicCrit  ?? (d.criticality || 0);
+      else if (mode === 'gamma') val = d.dynamicGamma ?? (d.gamma       || 0);
+      else                       val = d.phi_braess   || 0;
+
       if (val >= threshold) {
         edge.addClass('candidate');
         count++;

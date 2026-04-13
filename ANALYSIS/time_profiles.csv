@@ -1,0 +1,6 @@
+time_period,start_hour,end_hour,multiplier_normal,multiplier_market,description
+night,0,6,1.0,1.0,Free flow conditions
+morning_peak,6,9,1.5,2.3,Morning rush hour with heavy market activity
+midday,9,15,1.2,1.8,"Moderate traffic, market activity continues"
+evening_peak,15,19,1.6,2.5,"Evening rush hour, peak market congestion"
+late_evening,19,24,1.1,1.2,Reduced traffic as markets close
