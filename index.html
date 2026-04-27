@@ -222,6 +222,9 @@
         <span class="time-val" id="time-display">00:00</span>
         <span class="time-period" id="period-label">NIGHT</span>
       </div>
+      <button class="hdr-tool-btn" id="play-time-btn" onclick="togglePlayTime()" title="Auto-play time" style="margin-left: 10px; margin-right: 10px;">
+        <i class="fa-solid fa-play" id="play-time-icon"></i>
+      </button>
       <div class="slider-wrap">
         <input
           type="range"
@@ -422,6 +425,9 @@
             Click any <span class="amber-val">highlighted edge</span> to remove
             it
           </div>
+          <button class="res-auto-remove-btn" onclick="Resilience.autoRemoveAll()">
+            <i class="fa-solid fa-scissors"></i> Auto Remove All
+          </button>
           <div class="res-removed-header">
             <span
               >REMOVED <span id="removed-count" class="badge-red">0</span></span

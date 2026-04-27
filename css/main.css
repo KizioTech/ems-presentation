@@ -1456,6 +1456,26 @@ body {
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+.res-auto-remove-btn {
+  width: calc(100% - 26px);
+  margin: 10px 13px;
+  padding: 6px;
+  background: rgba(240, 165, 0, 0.1);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.res-auto-remove-btn:hover {
+  background: var(--amber);
+  color: #000;
+}
 .res-removed-header {
   display: flex;
   align-items: center;

@@ -12,6 +12,7 @@
  *   .nudge(delta)        – ±0.05 buttons next to the input
  *   .restoreEdge(id)     – restore one removed edge
  *   .restoreAll()        – restore all removed edges
+ *   .autoRemoveAll()     – auto-remove all candidate edges
  */
 window.Resilience = (() => {
 
@@ -194,6 +195,7 @@ window.Resilience = (() => {
 
     updateCandidates();
     renderRemovedList();
+    if (window.Routing && Routing.updateActiveRoutes) Routing.updateActiveRoutes();
   }
 
   // ── Restore individual edge ────────────────────────────────────
@@ -211,6 +213,25 @@ window.Resilience = (() => {
 
     updateCandidates();
     renderRemovedList();
+    if (window.Routing && Routing.updateActiveRoutes) Routing.updateActiveRoutes();
+  }
+
+  // ── Auto Remove All ────────────────────────────────────────────
+  function autoRemoveAll() {
+    let count = 0;
+    Graph.cy.edges('.candidate').forEach(edge => {
+      const d = edge.data();
+      removedEdges.push({ edgeId: edge.id(), data: d });
+      edge.removeClass('candidate');
+      edge.addClass('severed');
+      count++;
+    });
+
+    if (count > 0) {
+      updateCandidates();
+      renderRemovedList();
+      if (window.Routing && Routing.updateActiveRoutes) Routing.updateActiveRoutes();
+    }
   }
 
   // ── Restore all ────────────────────────────────────────────────
@@ -221,6 +242,7 @@ window.Resilience = (() => {
     removedEdges = [];
     updateCandidates();
     renderRemovedList();
+    if (window.Routing && Routing.updateActiveRoutes) Routing.updateActiveRoutes();
   }
 
   // ── Render removed-edges list ──────────────────────────────────
@@ -258,6 +280,6 @@ window.Resilience = (() => {
     initControls();
   }
 
-  return { toggle, setMode, nudge, restoreEdge, restoreAll, init };
+  return { toggle, setMode, nudge, restoreEdge, restoreAll, autoRemoveAll, init };
 
 })();

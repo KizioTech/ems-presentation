@@ -4167,46 +4167,15 @@ const VEHICLES = [
   }
 ];
 const TIME_PROFILES = [
-  {
-    "time_period": "night",
-    "start_hour": "0",
-    "end_hour": "6",
-    "multiplier_normal": "1.0",
-    "multiplier_market": "1.0",
-    "description": "Free flow conditions"
-  },
-  {
-    "time_period": "morning_peak",
-    "start_hour": "6",
-    "end_hour": "9",
-    "multiplier_normal": "1.5",
-    "multiplier_market": "2.3",
-    "description": "Morning rush hour with heavy market activity"
-  },
-  {
-    "time_period": "midday",
-    "start_hour": "9",
-    "end_hour": "15",
-    "multiplier_normal": "1.2",
-    "multiplier_market": "1.8",
-    "description": "Moderate traffic, market activity continues"
-  },
-  {
-    "time_period": "evening_peak",
-    "start_hour": "15",
-    "end_hour": "19",
-    "multiplier_normal": "1.6",
-    "multiplier_market": "2.5",
-    "description": "Evening rush hour, peak market congestion"
-  },
-  {
-    "time_period": "late_evening",
-    "start_hour": "19",
-    "end_hour": "24",
-    "multiplier_normal": "1.1",
-    "multiplier_market": "1.2",
-    "description": "Reduced traffic as markets close"
-  }
+  { "time_period": "night", "start_hour": "0", "end_hour": "5", "multiplier_normal": "1.0", "multiplier_market": "1.0", "description": "Free flow conditions" },
+  { "time_period": "early_morning", "start_hour": "5", "end_hour": "7", "multiplier_normal": "1.2", "multiplier_market": "1.4", "description": "Traffic building up" },
+  { "time_period": "morning_peak", "start_hour": "7", "end_hour": "9.5", "multiplier_normal": "1.8", "multiplier_market": "2.8", "description": "Morning rush hour with heavy market activity" },
+  { "time_period": "midday", "start_hour": "9.5", "end_hour": "12", "multiplier_normal": "1.3", "multiplier_market": "1.9", "description": "Moderate traffic" },
+  { "time_period": "lunch_rush", "start_hour": "12", "end_hour": "14", "multiplier_normal": "1.5", "multiplier_market": "2.4", "description": "Lunch time activity" },
+  { "time_period": "afternoon", "start_hour": "14", "end_hour": "16", "multiplier_normal": "1.3", "multiplier_market": "1.8", "description": "Afternoon lull" },
+  { "time_period": "evening_peak", "start_hour": "16", "end_hour": "19", "multiplier_normal": "2.0", "multiplier_market": "3.2", "description": "Evening rush hour, peak market congestion" },
+  { "time_period": "late_evening", "start_hour": "19", "end_hour": "22", "multiplier_normal": "1.2", "multiplier_market": "1.4", "description": "Reduced traffic as markets close" },
+  { "time_period": "night_late", "start_hour": "22", "end_hour": "24", "multiplier_normal": "1.0", "multiplier_market": "1.0", "description": "Late night free flow" }
 ];
 
 // ── Braess Extension Patch ──────────────────────────────────────

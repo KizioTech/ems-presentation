@@ -84,8 +84,9 @@
     const container = document.getElementById('slider-zones');
     if (!container) return;
     const ZONE_COLORS = {
-      night:'#1a3a5c', morning_peak:'#5a2800', midday:'#3a3000',
-      evening_peak:'#5a1800', late_evening:'#1a2a1a',
+      night:'#1a3a5c', early_morning:'#2a3a1c', morning_peak:'#5a2800', midday:'#3a3000',
+      lunch_rush:'#4a2800', afternoon:'#3a3000', evening_peak:'#6a1800', 
+      late_evening:'#2a3a1a', night_late:'#1a3a5c'
     };
     TIME_PROFILES.forEach(p => {
       const start = parseFloat(p.start_hour);
@@ -99,6 +100,32 @@
   }
 
 })();
+
+// ── Auto-play time ────────────────────────────────────────────────
+let playInterval = null;
+window.togglePlayTime = function() {
+  const btn = document.getElementById('play-time-btn');
+  const icon = document.getElementById('play-time-icon');
+  const slider = document.getElementById('time-slider');
+  
+  if (playInterval) {
+    clearInterval(playInterval);
+    playInterval = null;
+    if (icon) icon.className = 'fa-solid fa-play';
+    if (btn) btn.classList.remove('active');
+  } else {
+    // ~14.4 seconds for a full 24h loop (144 ticks * 100ms)
+    playInterval = setInterval(() => {
+      let val = parseInt(slider.value, 10);
+      val += 10;
+      if (val >= 1440) val = 0;
+      slider.value = val;
+      slider.dispatchEvent(new Event('input'));
+    }, 100);
+    if (icon) icon.className = 'fa-solid fa-pause';
+    if (btn) btn.classList.add('active');
+  }
+};
 
 // ── Panel collapse/expand ─────────────────────────────────────────
 window.togglePanel = function(side) {
