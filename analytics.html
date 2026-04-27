@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>EMS Analytics — Simulation Results Dashboard</title>
+    <meta name="description" content="Deep analytics dashboard for the Emergency Vehicle Routing Simulation — multi-objective optimization results, Braess paradox impact, vehicle dispatch timelines, and Pareto frontier analysis." />
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" /></noscript>
+    <link rel="stylesheet" href="css/analytics.css" />
+  </head>
+  <body>
+
+    <!-- ══ HEADER ════════════════════════════════════════════════ -->
+    <header class="an-header">
+      <div class="an-header-left">
+        <div class="an-logo">EMS<span>OPS</span></div>
+        <div>
+          <div class="an-header-title">SIMULATION RESULTS · DEEP ANALYTICS</div>
+          <div class="an-header-sub">// Zomba, Malawi · G(V=40, E=200) · 15 Incidents · 5 Vehicles · Multi-Objective MOLS</div>
+        </div>
+      </div>
+      <div class="an-header-right">
+        <button class="an-hdr-btn" id="autoplay-speed-btn" onclick="Presentation.cycleSpeed()" title="Auto-play interval">
+          <i class="fa-solid fa-gauge"></i> <span id="speed-label">20s</span>
+        </button>
+        <button class="an-hdr-btn" id="present-btn" onclick="Presentation.enter()" title="Enter presentation mode (P)">
+          <i class="fa-solid fa-display"></i> PRESENT
+        </button>
+        <button class="an-hdr-btn" id="fs-btn" onclick="Presentation.toggleFullscreen()" title="Fullscreen (F)">
+          <i class="fa-solid fa-expand" id="an-fs-icon"></i>
+        </button>
+        <a href="index.html" class="an-back-btn">
+          <i class="fa-solid fa-arrow-left"></i> SIMULATOR
+        </a>
+      </div>
+    </header>
+
+    <!-- ══ PAGE BODY ══════════════════════════════════════════════ -->
+    <div class="an-page">
+
+      <!-- ── KPI STRIP ──────────────────────────────────────────── -->
+      <div class="an-kpi-strip">
+        <div class="kpi-card accent">
+          <div class="kpi-icon"><i class="fa-solid fa-siren-on"></i></div>
+          <div class="kpi-val" data-val="15" data-dec="0">15</div>
+          <div class="kpi-unit">incidents</div>
+          <div class="kpi-label">Total Dispatched</div>
+          <div class="kpi-sub">3 Critical · 4 Urgent · 6 Moderate · 1 Minor · 1 Co-located</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon"><i class="fa-solid fa-bolt"></i></div>
+          <div class="kpi-val" data-val="2.96" data-dec="2">2.96</div>
+          <div class="kpi-unit">minutes travel</div>
+          <div class="kpi-label">Fastest Response</div>
+          <div class="kpi-sub">INC_007 (urgent) · AMB_01 · 3-hop route</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon"><i class="fa-solid fa-route"></i></div>
+          <div class="kpi-val" data-val="18.0" data-dec="1">18.0</div>
+          <div class="kpi-unit">minutes travel</div>
+          <div class="kpi-label">Longest Route</div>
+          <div class="kpi-sub">INC_014 (moderate) · 9-hop path · Pareto=6</div>
+        </div>
+        <div class="kpi-card amber">
+          <div class="kpi-icon"><i class="fa-solid fa-circle-nodes"></i></div>
+          <div class="kpi-val" data-val="6" data-dec="0">6</div>
+          <div class="kpi-unit">solutions</div>
+          <div class="kpi-label">Max Pareto Front</div>
+          <div class="kpi-sub">INC_006 &amp; INC_014 — rich solution space</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <div class="kpi-val" data-val="39.2" data-dec="1">39.2</div>
+          <div class="kpi-unit">% avg increase</div>
+          <div class="kpi-label">Braess φ Impact</div>
+          <div class="kpi-sub">On feeder-using routes · INC_006 worst at +39.2%</div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION A — Incident Response Profile
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-a">
+        <div class="an-section-label">Section A</div>
+        <div class="an-section-title">Incident Response Profile</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// MULTI-OBJECTIVE COST BREAKDOWN PER INCIDENT</div>
+              <div class="an-chart-canvas-wrap">
+                <canvas id="chartA"></canvas>
+              </div>
+              <div class="an-legend" style="margin-top:14px;">
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff1f40"></div>Critical</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff8800"></div>Urgent</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ffcc00"></div>Moderate</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#33e699"></div>Minor</div>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge cyan"><i class="fa-solid fa-chart-bar"></i> Multi-Objective</div>
+              <div class="an-desc-heading">Three objectives, one dispatch decision</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                The MOLS algorithm simultaneously minimises three conflicting objectives for each incident:
+                <br/><br/>
+                <strong>f₁ (Travel + Cost)</strong> — combines time-dependent travel time τ<sub>ij</sub>(t) with weighted operational cost λ·c<sub>ij</sub>. <em>Lower is faster &amp; cheaper.</em>
+                <br/><br/>
+                <strong>f₂ (Reliability Cost)</strong> — penalises variance in travel time through γ (variability factor) and the Braess structural vulnerability φ. Routes through high-congestion feeder roads carry disproportionate f₂.
+                <br/><br/>
+                <strong>f₃ (Resilience Score)</strong> — accumulates edge criticality ρ along the path. A high f₃ means the route depends heavily on structurally critical edges — a network risk.
+                <br/><br/>
+                INC_006 (critical, evening peak) exhibits the most extreme f₂ due to feeder-road vulnerability. INC_014 shows the highest f₁ because its 9-hop path spans the widest physical distance.
+              </div>
+              <div class="an-formula">f₁(P) = Σ [τᵢⱼ(t) + λ·cᵢⱼ]<br/>f₂(P) = Σ vᵢⱼ(t)<br/>f₃(P) = β·Σ ρᵢⱼ</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION B — Braess Paradox Impact
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-b">
+        <div class="an-section-label">Section B</div>
+        <div class="an-section-title">Braess Paradox — Highway Upgrade Impact</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid reverse">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// RELIABILITY COST f₂: BASELINE vs BRAESS-ADJUSTED (FEEDER ROUTES ONLY)</div>
+              <div class="an-chart-canvas-wrap">
+                <canvas id="chartB"></canvas>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge red"><i class="fa-solid fa-triangle-exclamation"></i> Braess's Paradox</div>
+              <div class="an-desc-heading">When a faster road makes the network worse</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                <strong>Braess's Paradox</strong> is a counter-intuitive network phenomenon: adding or upgrading a road can <em>increase overall congestion</em> for all users. In this simulation, six trunk-class edges were upgraded to highway standard (E_H), making them time-invariant (congestion multiplier = 1.0 across all periods).
+                <br/><br/>
+                However, the 71 feeder edges (E_F) connecting intersections to these highways experienced a structural vulnerability penalty φ ∈ [0.25, 0.70], modifying the reliability objective:
+              </div>
+              <div class="an-formula">v*ᵢⱼ(t) = τᵢⱼ(t)·(τᵢⱼ(t)/τ°ᵢⱼ)²·γᵢⱼ·(1 + φᵢⱼ)</div>
+              <div class="an-desc-body">
+                INC_006 suffers the largest absolute increase (+7.57 units, +39.2%), occurring during evening peak when feeder roads are already at ×2.5 market congestion. INC_001 shows a +59.8% increase — demonstrating that short critical-priority routes can be severely penalised if they traverse even one high-φ feeder segment.
+              </div>
+              <div class="an-desc-kv">
+                <div class="an-desc-row"><span>Worst absolute impact</span><span>INC_006 · +7.57</span></div>
+                <div class="an-desc-row"><span>Worst relative impact</span><span>INC_001 · +59.8%</span></div>
+                <div class="an-desc-row"><span>No impact (non-feeder)</span><span>INC_004, 002, 015</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION C — Edge Class Radar
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-c">
+        <div class="an-section-label">Section C</div>
+        <div class="an-section-title">Edge Class Performance Comparison</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// RADAR: MEAN τ · v* · ρ BY EDGE VULNERABILITY CLASS</div>
+              <div class="an-chart-canvas-wrap" style="min-height:300px;">
+                <canvas id="chartC"></canvas>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge amber"><i class="fa-solid fa-spider"></i> Network Topology</div>
+              <div class="an-desc-heading">Highway speed comes at a structural cost</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                The radar compares the three edge classes normalised to [0, 100%]:
+                <br/><br/>
+                <strong>Highway E_H (6 edges)</strong> — fastest mean travel time (τ = 2.04 min) and lowest reliability cost (v* = 0.55). However, their existence <em>induces φ penalties</em> on adjacent feeders.
+                <br/><br/>
+                <strong>Feeder E_F (71 edges)</strong> — the most problematic class. Mean τ is highest (6.61 min) and v* is dramatically elevated (21.76) due to the Braess vulnerability. These edges form the "weak link" surrounding each highway corridor.
+                <br/><br/>
+                <strong>Standard E_S (123 edges)</strong> — the network backbone. Moderate τ (4.28 min), moderate v* (5.74), and lowest criticality ρ (0.091). These edges provide the safest overall routing.
+              </div>
+              <div class="an-desc-kv">
+                <div class="an-desc-row"><span>Highway mean τ</span><span>2.037 min</span></div>
+                <div class="an-desc-row"><span>Feeder mean v*</span><span>21.764</span></div>
+                <div class="an-desc-row"><span>Standard mean ρ</span><span>0.091 (lowest)</span></div>
+                <div class="an-desc-row"><span>Total edges</span><span>6 + 71 + 123 = 200</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION D — Congestion Timeline
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-d">
+        <div class="an-section-label">Section D</div>
+        <div class="an-section-title">Congestion Multiplier Timeline &amp; Incident Distribution</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// CONGESTION MULTIPLIER BY HOUR · DASHED LINES = INCIDENT CALL TIMES</div>
+              <div class="an-chart-canvas-wrap" style="min-height:300px;">
+                <canvas id="chartD"></canvas>
+              </div>
+              <div class="an-legend" style="margin-top:14px;">
+                <div class="an-legend-chip"><div class="an-legend-line" style="background:#00e0ff"></div>Normal Road ×</div>
+                <div class="an-legend-chip"><div class="an-legend-line" style="background:#ff8800"></div>Market Road ×</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff1f40; width:8px; height:12px; border-radius:1px;"></div>Critical call</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff8800; width:8px; height:12px; border-radius:1px;"></div>Urgent call</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ffcc00; width:8px; height:12px; border-radius:1px;"></div>Moderate call</div>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge cyan"><i class="fa-solid fa-clock"></i> Time-Dependent</div>
+              <div class="an-desc-heading">When incidents strike — and how the network responds</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                The Zomba network uses five time periods with piecewise-linear congestion functions. Market roads — concentrated in the CBD — experience up to <em>2.5× baseline travel time</em> during evening peak (15:00–19:00).
+                <br/><br/>
+                Two of the three <strong>critical incidents</strong> occurred near midnight (INC_001 at 23:12, INC_004 at 21:10) when congestion drops to near-free flow — this partially explains their relatively low f₂ values despite high priority.
+                <br/><br/>
+                INC_006 (critical, 17:59) is the notable exception: it struck at the peak of market congestion (×2.5), producing the highest f₂ in the entire dataset. INC_008 (urgent, 16:07) similarly suffers elevated reliability cost due to feeder dependence during evening peak.
+              </div>
+              <div class="an-desc-kv">
+                <div class="an-desc-row"><span>Night (00–06)</span><span>×1.0 / ×1.0</span></div>
+                <div class="an-desc-row"><span>Morning peak (06–09)</span><span>×1.5 / ×2.3</span></div>
+                <div class="an-desc-row"><span>Midday (09–15)</span><span>×1.2 / ×1.8</span></div>
+                <div class="an-desc-row"><span>Evening peak (15–19)</span><span>×1.6 / ×2.5</span></div>
+                <div class="an-desc-row"><span>Late evening (19–24)</span><span>×1.1 / ×1.2</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION E — Dispatch Gantt
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-e">
+        <div class="an-section-label">Section E</div>
+        <div class="an-section-title">Vehicle Dispatch Timeline — Fleet Utilisation</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// GANTT: DISPATCH SEGMENTS PER VEHICLE (BAR WIDTH = TRAVEL TIME)</div>
+              <div class="gantt-wrap" id="gantt-container"></div>
+              <div class="an-legend" style="margin-top:14px; padding:0 0 4px;">
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff1f40"></div>Critical</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff8800"></div>Urgent</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ffcc00"></div>Moderate</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#33e699"></div>Minor</div>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge green"><i class="fa-solid fa-truck-medical"></i> Fleet Analysis</div>
+              <div class="an-desc-heading">AMB_01 carries the fleet — AMB_04 sits idle</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                The sequential priority-based dispatch policy produces a heavily uneven workload distribution across the 5-vehicle fleet:
+                <br/><br/>
+                <strong>AMB_01</strong> (priority rank 1, base: Dispatch_A) handles <em>5 dispatches</em> including the complex 9-hop INC_014 route. Its sequential availability explains the long queue delay — INC_007, INC_011, INC_013, and INC_014 all departed well after their call time.
+                <br/><br/>
+                <strong>AMB_04</strong> (priority rank 4) receives <em>zero dispatches</em> — a direct consequence of the strict priority ordering. In real-world scenarios, proximity-weighted dispatch policies would redistribute load more equitably.
+                <br/><br/>
+                The dispatch delay is most visible for INC_008 (urgent): called at 16:07 but departed at 18:37 — a 2.5-hour queuing delay due to AMB_03's prior commitment to INC_006.
+              </div>
+              <div class="an-desc-kv">
+                <div class="an-desc-row"><span>AMB_01 dispatches</span><span>5 missions</span></div>
+                <div class="an-desc-row"><span>AMB_02 dispatches</span><span>3 missions</span></div>
+                <div class="an-desc-row"><span>AMB_03 dispatches</span><span>3 missions</span></div>
+                <div class="an-desc-row"><span>AMB_04 dispatches</span><span>0 missions</span></div>
+                <div class="an-desc-row"><span>AMB_05 dispatches</span><span>2 missions</span></div>
+                <div class="an-desc-row"><span>Max queue delay</span><span>INC_008 · 2.5h</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION F — Pareto Front Bubbles
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-f">
+        <div class="an-section-label">Section F</div>
+        <div class="an-section-title">Pareto Front Size — Solution Space Richness</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid reverse">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// BUBBLE: f₁ vs f₂ · BUBBLE SIZE = PARETO FRONT SIZE · COLOUR = SEVERITY</div>
+              <div class="an-chart-canvas-wrap" style="min-height:320px;">
+                <canvas id="chartE"></canvas>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge purple"><i class="fa-solid fa-circle-nodes"></i> Pareto Optimality</div>
+              <div class="an-desc-heading">Larger bubbles = richer routing choices</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                The Multi-Objective Label-Setting (MOLS) algorithm retains all <strong>Pareto-non-dominated</strong> label pairs throughout the graph traversal. The resulting Pareto front size reflects the topological richness around each origin-destination pair.
+                <br/><br/>
+                A <em>pareto_size = 1</em> means only a single route survived objective pruning — the MOLS found no meaningful trade-off alternatives. This occurs for geographically simple O-D pairs (INC_001: 37→26, direct edge) or zero-distance incidents (co-located vehicle and scene).
+                <br/><br/>
+                <em>pareto_size = 6</em> (INC_006, INC_014) indicates high routing flexibility — the dispatcher has genuine choices between faster-but-costlier and slower-but-more-reliable routes. This is where policy selection (TIME vs RELIABILITY vs PARETO) has the most impact.
+              </div>
+              <div class="an-desc-kv">
+                <div class="an-desc-row"><span>Pareto size = 1</span><span>5 incidents (rigid routing)</span></div>
+                <div class="an-desc-row"><span>Pareto size 2–4</span><span>7 incidents (moderate)</span></div>
+                <div class="an-desc-row"><span>Pareto size 5–6</span><span>2 incidents (rich choice)</span></div>
+                <div class="an-desc-row"><span>Avg Pareto size</span><span>2.7 solutions</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           SECTION G — Multi-Objective Scatter
+      ══════════════════════════════════════════════════════════════ -->
+      <section class="an-section" id="sec-g">
+        <div class="an-section-label">Section G</div>
+        <div class="an-section-title">Multi-Objective Cost Surface — Pareto Frontier</div>
+        <div class="an-section-divider"></div>
+
+        <div class="an-card">
+          <div class="an-chart-desc-grid">
+            <div class="an-chart-wrap">
+              <div class="an-chart-title">// SCATTER: f₁ vs f₂ · POINT SIZE = f₃ RESILIENCE · COLOUR = ROUTE TYPE</div>
+              <div class="an-chart-canvas-wrap" style="min-height:340px;">
+                <canvas id="chartF"></canvas>
+              </div>
+              <div class="an-legend" style="margin-top:14px;">
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#ff3355"></div>Feeder route (φ > 0)</div>
+                <div class="an-legend-chip"><div class="an-legend-dot" style="background:#00e0ff"></div>Standard route (φ = 0)</div>
+                <div class="an-legend-chip" style="color:var(--text-lo);font-size:0.64rem;">Point size ∝ f₃ resilience score</div>
+              </div>
+            </div>
+            <div class="an-desc-panel">
+              <div class="an-desc-badge cyan"><i class="fa-solid fa-chart-scatter"></i> Objective Space</div>
+              <div class="an-desc-heading">The fundamental trade-off revealed</div>
+              <div class="an-desc-divider"></div>
+              <div class="an-desc-body">
+                This scatter reveals the <strong>Pareto frontier</strong> in objective space: no single route can minimise all three objectives simultaneously. Key observations:
+                <br/><br/>
+                <strong>Feeder routes cluster high</strong> in f₂ — the Braess vulnerability pushes red points upward regardless of f₁. A dispatcher optimising for reliability (f₂) should avoid feeder-dependent paths even when they appear time-optimal.
+                <br/><br/>
+                <strong>Large points</strong> (high f₃ resilience) tend to fall in the middle of the scatter — routes with high criticality exposure are neither the fastest nor the slowest, but they introduce structural risk: if a critical edge is removed, these routes have no alternative.
+                <br/><br/>
+                The <em>ideal Pareto solution</em> would occupy the bottom-left of this chart with a small point — INC_002 and INC_015 come closest, representing short urgent incidents resolved via low-criticality standard routes at night-to-midday congestion levels.
+              </div>
+              <div class="an-formula">Minimise: {f₁, f₂, f₃}<br/>Subject to: path P ∈ G(V,E)<br/>            vehicle availability<br/>            time-dependent τᵢⱼ(t)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /.an-page -->
+
+    <!-- ══ PRESENTATION OVERLAY ══════════════════════════════════ -->
+    <div id="pres-overlay" class="pres-overlay" style="display:none;">
+
+      <!-- Slide stage -->
+      <div id="pres-stage" class="pres-stage">
+        <!-- Slides injected here by JS -->
+      </div>
+
+      <!-- Top bar -->
+      <div class="pres-topbar">
+        <div class="pres-logo">EMS<span>OPS</span></div>
+        <div class="pres-counter" id="pres-counter">1 / 8</div>
+        <button class="pres-exit-btn" onclick="Presentation.exit()" title="Exit (Esc)">
+          <i class="fa-solid fa-xmark"></i> EXIT
+        </button>
+      </div>
+
+      <!-- Progress bar (auto-play) -->
+      <div class="pres-progress-wrap" id="pres-progress-wrap" style="display:none;">
+        <div class="pres-progress-bar" id="pres-progress-bar"></div>
+      </div>
+
+      <!-- Nav arrows -->
+      <button class="pres-nav pres-prev" id="pres-prev" onclick="Presentation.prev()" title="Previous (←)">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <button class="pres-nav pres-next" id="pres-next" onclick="Presentation.next()" title="Next (→ or Space)">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+
+      <!-- Bottom controls -->
+      <div class="pres-controls">
+        <button class="pres-ctrl-btn" onclick="Presentation.prev()">
+          <i class="fa-solid fa-backward-step"></i>
+        </button>
+        <button class="pres-ctrl-btn pres-autoplay-btn" id="pres-autoplay-btn" onclick="Presentation.toggleAutoplay()">
+          <i class="fa-solid fa-play" id="pres-autoplay-icon"></i> AUTO
+        </button>
+        <button class="pres-ctrl-btn" onclick="Presentation.next()">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+        <div class="pres-dot-strip" id="pres-dots"></div>
+      </div>
+
+    </div><!-- /#pres-overlay -->
+
+    <!-- ── Scripts ─────────────────────────────────────────────── -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="js/analytics.js"></script>
+
+  </body>
+</html>
