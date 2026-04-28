@@ -841,6 +841,10 @@ body::before {
   flex-direction: column;
   gap: 12px;
 }
+.pres-desc-area .an-desc-body {
+  font-size: 1.25rem;
+  line-height: 1.6;
+}
 .pres-desc-area::-webkit-scrollbar { width: 3px; }
 .pres-desc-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 

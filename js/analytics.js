@@ -534,63 +534,49 @@ const Presentation = (() => {
     {
       label: 'Section A', title: 'Incident Response Profile',
       badge: 'Multi-Objective', badgeColor: 'cyan',
-      desc: `The MOLS algorithm minimises three objectives simultaneously per incident.<br><br>
-<strong>f₁</strong> — travel time + operational cost. <strong>f₂</strong> — reliability cost (penalises feeder-road variance via γ and φ). <strong>f₃</strong> — resilience score (accumulates edge criticality ρ).<br><br>
-INC_006 peaks on f₂ (feeder + evening peak ×2.5). INC_014 peaks on f₁ (9-hop path, longest route).`,
+      desc: `MOLS algorithm minimises three objectives: <strong>f₁</strong> (Travel time + Cost), <strong>f₂</strong> (Reliability cost), and <strong>f₃</strong> (Resilience score).<br><br>INC_006 shows highest f₂ (feeder + evening peak), while INC_014 peaks on f₁ (longest route).`,
       formula: 'f₁ = Σ[τᵢⱼ(t)+λ·cᵢⱼ]  f₂ = Σvᵢⱼ(t)  f₃ = β·Σρᵢⱼ',
       buildChart(canvas) { return makeBarA(canvas); }
     },
     {
       label: 'Section B', title: 'Braess Paradox — Highway Upgrade Impact',
       badge: "Braess's Paradox", badgeColor: 'red',
-      desc: `Upgrading 6 trunk edges to highway (E_H) created a paradox: the 71 feeder edges (E_F) now carry structural vulnerability φ ∈ [0.25, 0.70].<br><br>
-Modified reliability: <code>v*ᵢⱼ = τᵢⱼ·(τᵢⱼ/τ°ᵢⱼ)²·γᵢⱼ·(1+φᵢⱼ)</code><br><br>
-<strong>INC_006</strong>: worst absolute impact (+7.57). <strong>INC_001</strong>: worst relative (+59.8%). Non-feeder routes: zero impact.`,
+      desc: `Upgrading 6 trunk edges to highway created a paradox: 71 feeder edges now carry high structural vulnerability.<br><br><strong>INC_006</strong> suffered the worst absolute impact, while <strong>INC_001</strong> saw a +59.8% relative increase in reliability cost.`,
       formula: 'v*ᵢⱼ(t) = τᵢⱼ·(τᵢⱼ/τ°ᵢⱼ)²·γᵢⱼ·(1+φᵢⱼ)',
       buildChart(canvas) { return makeBarB(canvas); }
     },
     {
       label: 'Section C', title: 'Edge Class Performance — Radar',
       badge: 'Network Topology', badgeColor: 'amber',
-      desc: `Three edge classes normalised to [0–100%] on τ, v*, ρ axes.<br><br>
-<strong>Highway E_H (6)</strong> — fastest τ=2.04 min, lowest v*=0.55.<br>
-<strong>Feeder E_F (71)</strong> — slowest τ=6.61, dramatically high v*=21.76 from Braess φ.<br>
-<strong>Standard E_S (123)</strong> — backbone. Lowest ρ=0.091, safest routing class.`,
+      desc: `Comparison of three edge classes:<br><br><strong>Highway (6)</strong>: fastest travel, lowest reliability cost.<br><strong>Feeder (71)</strong>: dramatically high reliability cost from Braess vulnerability.<br><strong>Standard (123)</strong>: safest routing backbone.`,
       formula: 'max(τ)=6.61  max(v*)=21.76  max(ρ)=0.137',
       buildChart(canvas) { return makeRadarC(canvas); }
     },
     {
       label: 'Section D', title: 'Congestion Timeline & Incident Distribution',
       badge: 'Time-Dependent', badgeColor: 'cyan',
-      desc: `Market roads hit ×2.5 during evening peak (15–19h).<br><br>
-Two critical incidents struck at night/late-night (INC_001: 23:12, INC_004: 21:10) — benefitting from near-free-flow conditions, hence low f₂.<br><br>
-<strong>INC_006</strong> (critical, 17:59) struck at peak market congestion — highest f₂ in dataset. Vertical dashed lines mark each incident call time.`,
+      desc: `Market roads experience up to 2.5× baseline travel time during the evening peak (15:00–19:00).<br><br>Most critical incidents struck at night, except <strong>INC_006</strong>, which hit during peak congestion, resulting in the highest reliability cost.`,
       formula: 'Night×1.0 · MornPeak×1.5/2.3 · Midday×1.2/1.8 · EvePeak×1.6/2.5',
       buildChart(canvas) { return makeLineD(canvas); }
     },
     {
       label: 'Section E', title: 'Vehicle Dispatch Timeline — Fleet Utilisation',
       badge: 'Fleet Analysis', badgeColor: 'green',
-      desc: `<strong>AMB_01</strong> handles 5 dispatches (priority rank 1) — including the complex 9-hop INC_014.<br><br>
-<strong>AMB_04</strong> receives zero dispatches — strict priority ordering leaves it idle throughout the simulation.<br><br>
-<strong>INC_008</strong> (urgent, called 16:07) departed 2.5 hours late — AMB_03 was committed to INC_006.`,
+      desc: `Uneven fleet utilisation due to strict priority dispatch:<br><br><strong>AMB_01</strong> handled 5 dispatches, while <strong>AMB_04</strong> remained idle.<br><strong>INC_008</strong> experienced a 2.5-hour delay waiting for an available ambulance.`,
       formula: 'AMB_01: 5 · AMB_02: 3 · AMB_03: 3 · AMB_04: 0 · AMB_05: 2',
       buildChart(canvas) { return makeGanttSlide(canvas); }
     },
     {
       label: 'Section F', title: 'Pareto Front Size — Solution Space Richness',
       badge: 'Pareto Optimality', badgeColor: 'purple',
-      desc: `MOLS retains all Pareto-non-dominated labels. Bubble size = Pareto front size.<br><br>
-<strong>Size = 1</strong>: only one route survived pruning (simple O-D, e.g. INC_001 direct edge).<br>
-<strong>Size = 6</strong> (INC_006, INC_014): genuine trade-off choices — policy selection matters most here.`,
+      desc: `Bubble size represents the number of Pareto-optimal routes found.<br><br><strong>Size 1</strong> indicates simple, rigid O-D routes.<br><strong>Size 6</strong> (INC_006, INC_014) shows high routing flexibility where dispatch policies matter most.`,
       formula: 'Avg Pareto size: 2.7 · Max: 6 · Min: 1',
       buildChart(canvas) { return makeBubbleE(canvas); }
     },
     {
       label: 'Section G', title: 'Multi-Objective Cost Surface — Pareto Frontier',
       badge: 'Objective Space', badgeColor: 'cyan',
-      desc: `Feeder routes (red) cluster high in f₂ regardless of f₁ — Braess φ lifts them upward. Point size encodes f₃ resilience.<br><br>
-<strong>INC_002 & INC_015</strong> approach the ideal corner (low f₁, low f₂, small f₃) — short urgent routes via standard roads at low-congestion hours.`,
+      desc: `The Pareto frontier reveals trade-offs: no single route minimizes all three objectives.<br><br>Feeder routes (red) cluster high in reliability cost, while optimal standard routes approach the bottom-left corner. Point size reflects resilience score.`,
       formula: 'Minimise {f₁, f₂, f₃} s.t. P∈G(V,E), vehicle availability, τᵢⱼ(t)',
       buildChart(canvas) { return makeScatterF(canvas); }
     },
@@ -835,7 +821,7 @@ Two critical incidents struck at night/late-night (INC_001: 23:12, INC_004: 21:1
     if (autoTimer) resetProgress();
   }
 
-  function next() { if (current < SLIDES.length - 1) goTo(current + 1, 1); else stopAutoplay(); }
+  function next() { if (current < SLIDES.length - 1) goTo(current + 1, 1); else if (autoTimer) goTo(0, 1); }
   function prev() { goTo(current - 1, -1); }
 
   /* ── Auto-play ────────────────────────────────────────────── */
