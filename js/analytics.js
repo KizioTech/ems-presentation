@@ -525,8 +525,8 @@ const Presentation = (() => {
   let progressRaf = null;
   let progStart = null;
   let presCharts = [];
-  const SPEEDS = [10, 20, 30, 45];
-  let speedIdx = 1; // default 20s
+  const SPEEDS = [1, 2, 3, 5, 10, 20, 30, 45];
+  let speedIdx = 2; // default 5s
 
   /* ── Slide definitions ─────────────────────────────────── */
   const SLIDES = [
